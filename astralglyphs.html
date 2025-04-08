@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Astral Glyphs</title>
+    <style>
+        /* ... All CSS styles remain the same as Step 10 ... */
+        body { margin: 0; overflow: hidden; background-color: #050005; color: #fff; font-family: sans-serif;}
+        canvas { display: block; }
+        #info { position: absolute; top: 10px; width: 100%; text-align: center; color: #ccc; z-index: 100; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #message { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); background-color: rgba(10, 0, 20, 0.75); border: 1px solid rgba(150, 100, 200, 0.5); color: #eee; padding: 10px 20px; border-radius: 5px; display: none; z-index: 100; text-align: center; pointer-events: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #submit-button { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); padding: 10px 20px; font-size: 16px; font-family: 'Cinzel', serif; font-weight: bold; letter-spacing: 1px; background: linear-gradient(to bottom, #201030, #100818); color: #e0e0ff; border: 1px solid #503070; border-radius: 8px; cursor: pointer; z-index: 101; display: none; box-shadow: 0 0 8px rgba(150, 100, 255, 0.5), 0 0 15px rgba(150, 100, 255, 0.3); transition: background 0.3s ease, box-shadow 0.3s ease, color 0.3s ease; }
+        #submit-button:hover:not(:disabled) { background: linear-gradient(to bottom, #302048, #201030); color: #ffffff; box-shadow: 0 0 12px rgba(180, 140, 255, 0.7), 0 0 25px rgba(180, 140, 255, 0.5); }
+        #submit-button:active:not(:disabled) { background: linear-gradient(to bottom, #180828, #100818); box-shadow: 0 0 5px rgba(150, 100, 255, 0.4), 0 0 10px rgba(150, 100, 255, 0.2); }
+        #submit-button:disabled { background: linear-gradient(to bottom, #333, #222); color: #777; border-color: #555; box-shadow: none; cursor: not-allowed; }
+        #glyph-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; }
+        .glyph { position: absolute; color: #fff; font-size: 24px; font-weight: bold; text-shadow: 0 0 5px #fff, 0 0 10px #0ff; transform: translate(-50%, -50%); pointer-events: none; display: none; z-index: 90; }
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&display=swap');
+    </style>
+</head>
+<body>
+    <div id="info">Astral Glyphs</div>
+    <div id="message">Make your first guess!</div>
+    <div id="glyph-overlay"></div>
+    <button id="submit-button">Submit Guess</button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+
+    <script>
+        // --- Global Variables, Groups, Game State, Touch State ---
+        let scene, camera, renderer, composer, bloomPass, controls; let environmentMap; const clock = new THREE.Clock(); const raycaster = new THREE.Raycaster(); const touchPos = new THREE.Vector2();
+        let paletteGroup; let guessRowsContainer; let currentGuessRowGroup;
+        let paletteOrbsData = []; let guessSlotsData = []; let placedOrbs = [];
+        let secretSequence = []; let currentAttempt = 0; const MAX_ATTEMPTS = 6; let gameState = 'playing';
+        let selectedPaletteIndex = null; let highlightedPaletteOrb = null; let confirmedSelectedOrb = null;
+        let targetPaletteRotation = 0; let currentPaletteRotation = 0; let targetPaletteIndex = 0;
+        let targetBoardRotation = 0; let currentBoardRotation = 0; let targetBoardTilt = 0; let currentBoardTilt = 0;
+        let targetContainerZ = 0; let currentContainerZ = 0; const CONTAINER_MOVE_SPEED = 2.0;
+        let touchStartX = 0; let touchStartY = 0; let touchStartTime = 0; let touchMoved = false;
+
+        // --- Constants ---
+        const BACKGROUND_COLOR = 0x050005; const FOG_DENSITY = 0.04;
+        const ORB_RADIUS_OUTER = 0.5; const ORB_RADIUS_INNER = 0.3;
+        const SLOT_RADIUS = 1.1; const SLOT_TORUS_RADIUS = 0.45; const SLOT_TORUS_TUBE = 0.03; const SLOT_TARGET_RADIUS = SLOT_TORUS_RADIUS + 0.15;
+        const PALETTE_ARC_RADIUS = 3.5; // *** Smaller arc radius ***
+        const PALETTE_Y_POS = 3.5;      // *** Higher Y position ***
+        const GUESS_ROW_START_Y = -1.0;
+        const GUESS_ROW_Z_SPACING = -4.0; // *** Increased Z spacing ***
+        const HIGHLIGHT_SCALE = 1.15; const SELECTION_SCALE = 1.3;
+        const PALETTE_ROTATION_SPEED = 5.0; const BOARD_ROTATION_SPEED = 5.0; const BOARD_TILT_SPEED = 3.0;
+        const BOARD_ROTATION_STEP = Math.PI / 3; const MAX_BOARD_TILT = Math.PI / 5; const MIN_BOARD_TILT = -Math.PI / 12;
+        const SWIPE_THRESHOLD_X = 40; const SWIPE_THRESHOLD_Y = 40; const TAP_THRESHOLD_TIME = 300; const TAP_THRESHOLD_DIST = 20;
+        const FEEDBACK_COLORS = { green: 0x00ff00, yellow: 0xffff00, gray: 0x808080 };
+        const HISTORY_ROW_SCALE_FACTOR = 0.2; // How much rows shrink per step back
+
+        // --- Color Palettes & Glyph Map (Same as Step 9) ---
+        const DISPLAY_PALETTES = [ /* ... palettes from step 9 ... */ { name: 'Red', bubble: 0xFA8072, crystal: 0xFF0000, emissive: 0xFF0000 }, { name: 'Purple', bubble: 0x9370DB, crystal: 0x8A2BE2, emissive: 0x8A2BE2 }, { name: 'Yellow', bubble: 0xFFFACD, crystal: 0xFFFF00, emissive: 0xFFFF00 }, { name: 'Orange', bubble: 0xFF8C00, crystal: 0xFF4500, emissive: 0xFF4500 }, { name: 'Blue', bubble: 0x87CEFA, crystal: 0x0000FF, emissive: 0x0000FF }, { name: 'Green', bubble: 0x98FB98, crystal: 0x00FF00, emissive: 0x00FF00 }, { name: 'Black', bubble: 0x333333, crystal: 0x222222, emissive: 0x000000 }, { name: 'White', bubble: 0xFFFFFF, crystal: 0xF5F5F5, emissive: 0xFFFFFF }, { name: 'Teal', bubble: 0x20B2AA, crystal: 0x008080, emissive: 0x008080 }, { name: 'Pink', bubble: 0xFFB6C1, crystal: 0xFF1493, emissive: 0xFF1493 }, ];
+        const GLYPH_MAP = ['#', '∆', '@', '§', '*', '$', '¥', '?', '~', '&'];
+
+        // --- Shared Geometries & Materials ---
+        const bubbleGeometry = new THREE.SphereGeometry(ORB_RADIUS_OUTER, 32, 32); const crystalGeometry = new THREE.IcosahedronGeometry(ORB_RADIUS_INNER, 1); const slotGeometry = new THREE.TorusGeometry(SLOT_TORUS_RADIUS, SLOT_TORUS_TUBE, 16, 64); const slotMaterial = new THREE.MeshBasicMaterial({ color: 0x555555, side: THREE.DoubleSide, transparent: true, opacity: 0.7 }); const slotHoverMaterial = new THREE.MeshBasicMaterial({ color: 0xeeeeee, emissive: 0xaaaaaa, emissiveIntensity: 0.3, side: THREE.DoubleSide, transparent: true, opacity: 0.95 }); const slotTargetGeometry = new THREE.CircleGeometry(SLOT_TARGET_RADIUS, 32); const slotTargetMaterial = new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide });
+
+
+        // --- Initialization ---
+        function init() {
+            scene = new THREE.Scene(); scene.background = new THREE.Color(BACKGROUND_COLOR); scene.fog = new THREE.FogExp2(BACKGROUND_COLOR, FOG_DENSITY);
+            const aspect = window.innerWidth / window.innerHeight; camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
+            camera.position.set(0, 2.5, 9); // *** Adjusted camera Y slightly for higher palette ***
+            camera.lookAt(new THREE.Vector3(0, 1.0, 0)); // *** Adjusted lookAt Y slightly ***
+
+            renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(window.devicePixelRatio); renderer.physicallyCorrectLights = true; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.9; renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; document.body.appendChild(renderer.domElement);
+            setupControls(); setupLighting(); guessRowsContainer = new THREE.Group(); scene.add(guessRowsContainer); generateSecretSequence();
+            setupEnvironmentMap(() => {
+                createPaletteOrbs(); startNewAttempt(); setupPostProcessing(); setupInteraction(); animate(); showMessage("Make your first guess!"); updateSubmitButtonState();
+            });
+            window.addEventListener('resize', onWindowResize, false);
+            document.getElementById('submit-button').addEventListener('touchstart', (event) => { console.log("Submit button touchstart triggered"); event.stopPropagation(); event.preventDefault(); handleSubmit(); }, { passive: false });
+            document.getElementById('submit-button').addEventListener('click', (event) => { console.log("Submit button click triggered (fallback)"); handleSubmit(); });
+        }
+
+        // --- Generate Secret Sequence (same) ---
+        function generateSecretSequence() { /* ... Same secret generation ... */ const indices = Array.from({ length: 10 }, (_, i) => i); for (let i = indices.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [indices[i], indices[j]] = [indices[j], indices[i]]; } secretSequence = indices.slice(0, 6); console.log("Secret Sequence (Indices):", secretSequence); }
+        // --- Start New Attempt (same) ---
+        function startNewAttempt() { /* ... Same start new attempt ... */ if (currentAttempt >= MAX_ATTEMPTS) return; targetBoardRotation = 0; targetBoardTilt = 0; currentGuessRowGroup = createGuessRow(currentAttempt); guessRowsContainer.add(currentGuessRowGroup); targetContainerZ = -(currentAttempt * GUESS_ROW_Z_SPACING); console.log(`Starting Attempt ${currentAttempt}, Target Container Z: ${targetContainerZ.toFixed(2)}`); updateSubmitButtonState(); }
+        // --- OrbitControls Setup (same) ---
+        function setupControls() { /* ... Same OrbitControls setup ... */ controls = new THREE.OrbitControls(camera, renderer.domElement); controls.enableDamping = true; controls.dampingFactor = 0.1; controls.screenSpacePanning = false; controls.enablePan = false; controls.enableRotate = false; controls.minDistance = 5; controls.maxDistance = 15; }
+        // --- Lighting Setup (same) ---
+        function setupLighting() { /* ... Same lighting code ... */ const ambientLight=new THREE.AmbientLight(0xffffff,0.25);scene.add(ambientLight);const keyLight=new THREE.DirectionalLight(0xffffff,1.0);keyLight.position.set(5,5,5);keyLight.castShadow=true;keyLight.shadow.mapSize.width=1024;keyLight.shadow.mapSize.height=1024;keyLight.shadow.camera.near=0.5;keyLight.shadow.camera.far=50;scene.add(keyLight);const fillLight=new THREE.DirectionalLight(0xffaaff,0.5);fillLight.position.set(-5,-3,2);scene.add(fillLight);const rimLight=new THREE.SpotLight(0xaaaaff,1.5,20,Math.PI/6,0.5);rimLight.position.set(0,6,-5);rimLight.target.position.set(0,0,0);scene.add(rimLight);scene.add(rimLight.target); }
+        // --- Environment Map Setup (same) ---
+        function setupEnvironmentMap(callback) { /* ... Same env map loading code ... */ const loader=new THREE.CubeTextureLoader();const path='https://threejs.org/examples/textures/cube/pisa/';const urls=[path+'px.png',path+'nx.png',path+'py.png',path+'ny.png',path+'pz.png',path+'nz.png'];loader.load(urls,(texture)=>{texture.encoding=THREE.sRGBEncoding;scene.environment=texture;environmentMap=texture;console.log("Environment map loaded.");if(callback)callback();},undefined,(error)=>{console.error('Error loading environment map:',error);if(callback)callback();}); }
+        // --- Create Palette Orbs (Uses updated constants) ---
+        function createPaletteOrbs() { /* ... Same palette creation code, uses new PALETTE_Y_POS, PALETTE_ARC_RADIUS ... */ paletteGroup = new THREE.Group(); paletteGroup.position.y = PALETTE_Y_POS; scene.add(paletteGroup); const angleStep = (Math.PI * 2) / DISPLAY_PALETTES.length; paletteOrbsData = []; DISPLAY_PALETTES.forEach((palette, index) => { const orbGroup = createOrbGroup(palette); const angle = index * angleStep; orbGroup.position.x = PALETTE_ARC_RADIUS * Math.sin(angle); orbGroup.position.z = PALETTE_ARC_RADIUS * Math.cos(angle); orbGroup.userData = { type: 'palette', index: index }; orbGroup.children[0].userData = { parentGroup: orbGroup }; paletteOrbsData.push({ group: orbGroup, index: index }); paletteGroup.add(orbGroup); }); console.log("Palette orbs created and grouped."); }
+
+        // --- Create Guess Row (Adds attemptIndex to userData) ---
+        function createGuessRow(attemptIndex) {
+            const group = new THREE.Group();
+            group.position.y = GUESS_ROW_START_Y;
+            group.position.z = attemptIndex * GUESS_ROW_Z_SPACING;
+            // *** Store attempt index on the group for scaling ***
+            group.userData.attemptIndex = attemptIndex;
+
+            const hexRadius = SLOT_RADIUS;
+            const positions = [ /* ... Same hex positions ... */ new THREE.Vector3(hexRadius, 0, 0), new THREE.Vector3(hexRadius / 2, 0, -hexRadius * Math.sqrt(3) / 2), new THREE.Vector3(-hexRadius / 2, 0, -hexRadius * Math.sqrt(3) / 2), new THREE.Vector3(-hexRadius, 0, 0), new THREE.Vector3(-hexRadius / 2, 0, hexRadius * Math.sqrt(3) / 2), new THREE.Vector3(hexRadius / 2, 0, hexRadius * Math.sqrt(3) / 2), ];
+            guessSlotsData[attemptIndex] = [];
+            placedOrbs[attemptIndex] = new Array(6).fill(null);
+
+            for (let i = 0; i < 6; i++) {
+                const slotMesh = new THREE.Mesh(slotGeometry, slotMaterial.clone());
+                slotMesh.position.copy(positions[i]);
+                slotMesh.rotation.x = Math.PI / 2;
+                const slotTargetMesh = new THREE.Mesh(slotTargetGeometry, slotTargetMaterial);
+                slotTargetMesh.position.copy(positions[i]);
+                slotTargetMesh.rotation.x = Math.PI / 2;
+                // *** Add attemptIndex to commonUserData ***
+                const commonUserData = { type: 'slot', physicalIndex: i, row: attemptIndex, occupied: false, attemptIndex: attemptIndex };
+                slotMesh.userData = commonUserData; slotTargetMesh.userData = commonUserData;
+                guessSlotsData[attemptIndex].push({ mesh: slotMesh, targetMesh: slotTargetMesh, index: i, row: attemptIndex, occupied: false });
+                group.add(slotMesh); group.add(slotTargetMesh);
+            }
+             group.rotation.y = 0; group.rotation.x = 0; // Start flat and forward
+             console.log(`Guess row ${attemptIndex} created at local Z ${group.position.z.toFixed(2)}.`);
+             return group;
+        }
+
+        // --- Helper Function to Create Orb Group (same) ---
+        function createOrbGroup(palette) { /* ... Same orb group creation code with B/W handling ... */ let crystalEmissiveIntensity = 1.5; let crystalMetalness = 0.2; let crystalRoughness = 0.3; let crystalColor = palette.crystal; let bubbleTransmission = 0.9; let bubbleOpacity = 0.9; if (palette.name === 'Black') { crystalMetalness = 0.9; crystalRoughness = 0.2; crystalColor = 0x111111; crystalEmissiveIntensity = 0; bubbleTransmission = 0.5; bubbleOpacity = 0.8; } else if (palette.name === 'White') { crystalEmissiveIntensity = 0.5; crystalColor = 0xEAEAEA; } const crystalMaterial = new THREE.MeshStandardMaterial({ color: crystalColor, emissive: palette.emissive, emissiveIntensity: crystalEmissiveIntensity, metalness: crystalMetalness, roughness: crystalRoughness, envMap: environmentMap, envMapIntensity: (palette.name === 'Black' ? 0.8 : 0.3), toneMapped: false }); const crystalMesh = new THREE.Mesh(crystalGeometry, crystalMaterial); crystalMesh.castShadow = true; const bubbleMaterial = new THREE.MeshPhysicalMaterial({ color: palette.bubble, metalness: (palette.name === 'Black' ? 0.2 : 0.8), roughness: 0.05, transmission: bubbleTransmission, transparent: true, opacity: bubbleOpacity, ior: 1.8, reflectivity: 0.9, envMap: environmentMap, envMapIntensity: (palette.name === 'Black' ? 1.5 : 1.0), clearcoat: 0.5, clearcoatRoughness: 0.1 }); const bubbleMesh = new THREE.Mesh(bubbleGeometry, bubbleMaterial); bubbleMesh.receiveShadow = true; const orbGroup = new THREE.Group(); orbGroup.add(bubbleMesh); orbGroup.add(crystalMesh); bubbleMesh.userData = { parentGroup: orbGroup, type: 'placed_orb_bubble' }; orbGroup.userData = { paletteIndex: DISPLAY_PALETTES.indexOf(palette) }; return orbGroup; }
+        // --- Post-Processing Setup (same) ---
+        function setupPostProcessing() { /* ... Same post-processing setup ... */ composer=new THREE.EffectComposer(renderer);const renderPass=new THREE.RenderPass(scene,camera);composer.addPass(renderPass);bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth,window.innerHeight),1.2,0.5,0.6);composer.addPass(bloomPass);console.log("Post-processing setup complete."); }
+        // --- Interaction Setup (Touch Listeners - same) ---
+        function setupInteraction() { /* ... Same touch listener setup ... */ window.addEventListener('touchstart', onTouchStart, { passive: false }); window.addEventListener('touchmove', onTouchMove, { passive: false }); window.addEventListener('touchend', onTouchEnd, false); window.addEventListener('mousemove', onMouseMove, false); }
+        // --- Touch Handlers (same) ---
+        function onTouchStart(event) { /* ... */ event.preventDefault(); const touch = event.touches[0]; touchStartX = touch.clientX; touchStartY = touch.clientY; touchStartTime = Date.now(); touchMoved = false; }
+        function onTouchMove(event) { /* ... */ event.preventDefault(); if (event.touches.length > 0) { const touch = event.touches[0]; const deltaX = touch.clientX - touchStartX; const deltaY = touch.clientY - touchStartY; if (Math.abs(deltaX) > TAP_THRESHOLD_DIST || Math.abs(deltaY) > TAP_THRESHOLD_DIST) { touchMoved = true; } } }
+        function onTouchEnd(event) { /* ... */ event.preventDefault(); const touch = event.changedTouches[0]; const touchEndX = touch.clientX; const touchEndY = touch.clientY; const touchEndTime = Date.now(); const touchDuration = touchEndTime - touchStartTime; const deltaX = touchEndX - touchStartX; const deltaY = touchEndY - touchStartY; if (!touchMoved && touchDuration < TAP_THRESHOLD_TIME) { handleTap(touchEndX, touchEndY, event); return; } if (touchMoved) { const isHorizontalSwipe = Math.abs(deltaX) > SWIPE_THRESHOLD_X && Math.abs(deltaY) < SWIPE_THRESHOLD_Y * 1.5; const isVerticalSwipe = Math.abs(deltaY) > SWIPE_THRESHOLD_Y && Math.abs(deltaX) < SWIPE_THRESHOLD_X * 1.5; const isTopHalf = touchStartY < window.innerHeight * 0.55; if (isTopHalf) { if (isHorizontalSwipe) { const swipeDirection = deltaX > 0 ? -1 : 1; console.log("-> Rotating Palette"); rotatePalette(swipeDirection); } } else { if (isHorizontalSwipe) { const swipeDirection = deltaX > 0 ? 1 : -1; console.log("-> Rotating Board"); rotateBoard(swipeDirection * BOARD_ROTATION_STEP); } else if (isVerticalSwipe) { const swipeDirection = deltaY > 0 ? -1 : 1; console.log("-> Tilting Board"); tiltBoard(swipeDirection * (Math.PI / 12)); } } } touchStartX = 0; touchStartY = 0; touchStartTime = 0; touchMoved = false; }
+        // --- Handle Tap Event (same) ---
+        function handleTap(screenX, screenY, event) { /* ... Same tap handling logic ... */ if (event && event.target && event.target.id === 'submit-button') { return; } if (gameState !== 'playing') return; touchPos.x = (screenX / window.innerWidth) * 2 - 1; touchPos.y = -(screenY / window.innerHeight) * 2 + 1; const placedOrbBubbles = []; if (placedOrbs[currentAttempt]) { placedOrbs[currentAttempt].forEach(orbGroup => { if (orbGroup && orbGroup.children[0]) { placedOrbBubbles.push(orbGroup.children[0]); } }); } if (placedOrbBubbles.length > 0) { raycaster.setFromCamera(touchPos, camera); const intersectsPlacedOrbs = raycaster.intersectObjects(placedOrbBubbles); if (intersectsPlacedOrbs.length > 0) { const orbGroupToRemove = intersectsPlacedOrbs[0].object.userData.parentGroup; if (orbGroupToRemove) { handleRemoveOrb(orbGroupToRemove); return; } } } if (confirmedSelectedOrb !== null && guessSlotsData[currentAttempt]) { const currentSlotTargets = guessSlotsData[currentAttempt].map(s => s.targetMesh); if (currentSlotTargets.length > 0) { raycaster.setFromCamera(touchPos, camera); const intersectsSlots = raycaster.intersectObjects(currentSlotTargets); if (intersectsSlots.length > 0) { const intersectedTarget = intersectsSlots[0].object; const slotUserData = intersectedTarget.userData; if (slotUserData.row === currentAttempt && slotUserData.type === 'slot' && !slotUserData.occupied) { const slotData = guessSlotsData[currentAttempt].find(s => s.targetMesh === intersectedTarget); if (slotData) { handleSlotPlacement(slotUserData.row, slotUserData.physicalIndex, slotData.mesh); return; } } } } } if (highlightedPaletteOrb) { raycaster.setFromCamera(touchPos, camera); const intersectsHighlighted = raycaster.intersectObject(highlightedPaletteOrb.children[0]); if (intersectsHighlighted.length > 0) { confirmPaletteSelection(); return; } } deselectPaletteOrb(); }
+        // --- Palette Rotation Logic (same) ---
+        function rotatePalette(indexIncrement) { /* ... */ targetPaletteIndex = (targetPaletteIndex + indexIncrement + DISPLAY_PALETTES.length) % DISPLAY_PALETTES.length; const anglePerOrb = (Math.PI * 2) / DISPLAY_PALETTES.length; targetPaletteRotation = -targetPaletteIndex * anglePerOrb; console.log(`Targeting palette index: ${targetPaletteIndex}`); }
+        // --- Confirm Palette Selection (same) ---
+        function confirmPaletteSelection() { /* ... */ if (!highlightedPaletteOrb) { showMessage("Swipe palette to bring a color to the front first.", 2000); return; } deselectPaletteOrb(false); confirmedSelectedOrb = highlightedPaletteOrb; selectedPaletteIndex = highlightedPaletteOrb.userData.index; confirmedSelectedOrb.scale.set(SELECTION_SCALE, SELECTION_SCALE, SELECTION_SCALE); console.log(`Confirmed selection: ${DISPLAY_PALETTES[selectedPaletteIndex].name}`); showMessage(`Selected: ${DISPLAY_PALETTES[selectedPaletteIndex].name}. Tap slot to place, tap placed orb to remove.`); }
+        // --- Deselect Palette Orb (same) ---
+        function deselectPaletteOrb(showMessageFlag = true) { /* ... */ if (confirmedSelectedOrb) { const scale = (confirmedSelectedOrb === highlightedPaletteOrb) ? HIGHLIGHT_SCALE : 1; confirmedSelectedOrb.scale.set(scale, scale, scale); confirmedSelectedOrb = null; selectedPaletteIndex = null; if (showMessageFlag) showMessage("Color deselected.", 1500); } }
+        // --- Board Rotation Logic (same) ---
+        function rotateBoard(angleIncrement) { /* ... */ if (!currentGuessRowGroup || gameState !== 'playing') return; targetBoardRotation += angleIncrement; console.log(`Targeting board rotation: ${Math.round(targetBoardRotation * 180 / Math.PI)} deg`); }
+        // --- Board Tilt Logic (same) ---
+        function tiltBoard(angleIncrement) { /* ... */ if (!currentGuessRowGroup || gameState !== 'playing') return; targetBoardTilt = THREE.MathUtils.clamp( targetBoardTilt + angleIncrement, MIN_BOARD_TILT, MAX_BOARD_TILT ); console.log(`Targeting board tilt: ${Math.round(targetBoardTilt * 180 / Math.PI)} deg`); }
+        // --- Handle Slot Placement (same) ---
+        function handleSlotPlacement(rowIndex, physicalSlotIndex, slotMesh) { /* ... */ if (gameState !== 'playing' || rowIndex !== currentAttempt) return; if (selectedPaletteIndex === null || confirmedSelectedOrb === null) return; const slotData = guessSlotsData[rowIndex].find(s => s.mesh === slotMesh); if (!slotData || slotData.occupied) { console.warn("Attempted to place orb in invalid or occupied slot."); return; } const numRotations = Math.round(currentBoardRotation / BOARD_ROTATION_STEP); const logicalSlotIndex = (((physicalSlotIndex - numRotations) % 6) + 6) % 6; if (placedOrbs[rowIndex][logicalSlotIndex] !== null) { showMessage("Slot conflict detected.", 1500); return; } const palette = DISPLAY_PALETTES[selectedPaletteIndex]; const newOrbGroup = createOrbGroup(palette); newOrbGroup.userData.paletteIndex = selectedPaletteIndex; newOrbGroup.position.copy(slotMesh.position); newOrbGroup.position.y += ORB_RADIUS_OUTER * 0.3; currentGuessRowGroup.add(newOrbGroup); if (!placedOrbs[rowIndex]) placedOrbs[rowIndex] = new Array(6).fill(null); placedOrbs[rowIndex][logicalSlotIndex] = newOrbGroup; slotData.occupied = true; slotMesh.userData.occupied = true; slotData.targetMesh.userData.occupied = true; slotMesh.material = slotMaterial; console.log(`Placed orb ${palette.name} (Index: ${selectedPaletteIndex}) in logical slot ${logicalSlotIndex}`); updateSubmitButtonState(); }
+        // --- Handle Orb Removal (same) ---
+        function handleRemoveOrb(orbGroupToRemove) { /* ... */ if (gameState !== 'playing' || !orbGroupToRemove) return; let logicalIndex = -1; if (placedOrbs[currentAttempt]) { logicalIndex = placedOrbs[currentAttempt].indexOf(orbGroupToRemove); } if (logicalIndex === -1) { console.error("Could not find orb to remove in current attempt row."); return; } console.log(`Removing orb from logical slot ${logicalIndex}`); const numRotations = Math.round(currentBoardRotation / BOARD_ROTATION_STEP); const physicalIndex = (logicalIndex + numRotations) % 6; const slotData = guessSlotsData[currentAttempt].find(s => s.index === physicalIndex); if (slotData) { slotData.occupied = false; if(slotData.mesh) slotData.mesh.userData.occupied = false; if(slotData.targetMesh) slotData.targetMesh.userData.occupied = false; if(slotData.mesh) slotData.mesh.material = slotMaterial; } else { console.error(`Could not find slot data for physical index ${physicalIndex}`); } currentGuessRowGroup.remove(orbGroupToRemove); placedOrbs[currentAttempt][logicalIndex] = null; orbGroupToRemove.traverse(child => { if (child.isMesh) { child.geometry.dispose(); if (child.material.isMaterial) { child.material.dispose(); } else { for (const material of child.material) material.dispose(); } } }); showMessage("Orb removed.", 1500); updateSubmitButtonState(); }
+        // --- Update Submit Button State (same) ---
+        function updateSubmitButtonState() { /* ... */ const submitButton = document.getElementById('submit-button'); if (!submitButton) return; if (gameState !== 'playing') { submitButton.style.display = 'none'; return; } const currentPlaced = placedOrbs[currentAttempt]; const filledStatus = currentPlaced ? currentPlaced.map(o => !!o) : []; console.log(`Checking submit state: Attempt ${currentAttempt}, Status: [${filledStatus.join(', ')}]`); const isRowFull = currentPlaced && currentPlaced.length === 6 && currentPlaced.every(orb => orb !== null); console.log(`Is row full? ${isRowFull}`); submitButton.style.display = isRowFull ? 'block' : 'none'; submitButton.disabled = !isRowFull; }
+        // --- Handle Guess Submission (same) ---
+        function handleSubmit() { /* ... */ if (gameState !== 'playing' || currentAttempt >= MAX_ATTEMPTS) return; const guess = []; const currentPlacedOrbs = placedOrbs[currentAttempt]; let isValidGuess = true; if (!currentPlacedOrbs || currentPlacedOrbs.length !== 6) isValidGuess = false; else { for (let i = 0; i < 6; i++) { const orbGroup = currentPlacedOrbs[i]; if (!orbGroup || orbGroup.userData.paletteIndex === undefined) { isValidGuess = false; break; } guess.push(orbGroup.userData.paletteIndex); } } if (!isValidGuess) { showMessage("Error: Guess is incomplete.", 2000); console.error("Attempted to submit incomplete guess:", currentPlacedOrbs); return; } console.log(`Submitting guess for attempt ${currentAttempt}:`, guess); disableInteraction(); const feedbackResults = checkGuess(guess); displayFeedback(currentAttempt, feedbackResults); setTimeout(() => { const isWin = feedbackResults.every(result => result === 'green'); if (isWin) { handleWin(); } else if (currentAttempt >= MAX_ATTEMPTS - 1) { handleLoss(); } else { currentAttempt++; targetContainerZ = -(currentAttempt * GUESS_ROW_Z_SPACING); console.log(`Advancing to Attempt ${currentAttempt}, Target Container Z: ${targetContainerZ.toFixed(2)}`); startNewAttempt(); enableInteraction(); showMessage(`Attempt ${currentAttempt + 1} of ${MAX_ATTEMPTS}. Make your guess.`); } }, 1000); }
+        // --- Disable/Enable Interaction (same) ---
+        function disableInteraction() { /* ... */ console.log("Interaction Disabled"); document.getElementById('submit-button').disabled = true; }
+        function enableInteraction() { /* ... */ console.log("Interaction Enabled"); document.getElementById('submit-button').disabled = false; updateSubmitButtonState(); }
+        // --- Check Guess Logic (same) ---
+        function checkGuess(guessIndices) { /* ... */ const feedback = new Array(6).fill(null); const secretCounts = {}; const secret = [...secretSequence]; for (let i = 0; i < 6; i++) { if (guessIndices[i] === secret[i]) { feedback[i] = 'green'; secret[i] = null; } else { secretCounts[secret[i]] = (secretCounts[secret[i]] || 0) + 1; } } for (let i = 0; i < 6; i++) { if (feedback[i] === null) { const guessColorIndex = guessIndices[i]; if (secretCounts[guessColorIndex] && secretCounts[guessColorIndex] > 0) { feedback[i] = 'yellow'; secretCounts[guessColorIndex]--; } else { feedback[i] = 'gray'; } } } console.log("Feedback:", feedback); return feedback; }
+        // --- Display Feedback (same) ---
+        function displayFeedback(attemptIndex, feedbackResults) { /* ... */ if (!guessSlotsData[attemptIndex]) return; const numRotations = Math.round(currentBoardRotation / BOARD_ROTATION_STEP); for (let logicalIndex = 0; logicalIndex < 6; logicalIndex++) { const feedback = feedbackResults[logicalIndex]; const color = FEEDBACK_COLORS[feedback]; const physicalIndex = (logicalIndex + numRotations) % 6; const slotData = guessSlotsData[attemptIndex].find(s => s.index === physicalIndex); if (slotData && slotData.mesh) { slotData.mesh.material.color.setHex(color); slotData.mesh.material.opacity = 0.9; if (hoveredSlot === slotData.mesh) hoveredSlot = null; } if (feedback === 'green') { const orbGroup = placedOrbs[attemptIndex][logicalIndex]; if (orbGroup && orbGroup.userData.paletteIndex !== undefined) { const paletteIndex = orbGroup.userData.paletteIndex; const glyphSymbol = GLYPH_MAP[paletteIndex]; revealGlyph(orbGroup, glyphSymbol, attemptIndex, logicalIndex); } } } }
+        // --- Reveal Glyph (same) ---
+        const glyphElements = {}; function revealGlyph(orbGroup, symbol, attemptIndex, logicalIndex) { /* ... */ const overlayContainer = document.getElementById('glyph-overlay'); const elementId = `glyph-${attemptIndex}-${logicalIndex}`; let glyphElement = document.getElementById(elementId); if (!glyphElement) { glyphElement = document.createElement('div'); glyphElement.id = elementId; glyphElement.className = 'glyph'; glyphElement.textContent = symbol; overlayContainer.appendChild(glyphElement); if (!glyphElements[attemptIndex]) glyphElements[attemptIndex] = []; glyphElements[attemptIndex][logicalIndex] = glyphElement; } glyphElement.style.display = 'block'; }
+        // --- Update Glyph Positions (same) ---
+        function updateGlyphPositions() { /* ... */ const overlayContainer = document.getElementById('glyph-overlay'); if (!camera || !placedOrbs || placedOrbs.length === 0) return; for (let attemptIdx = 0; attemptIdx <= currentAttempt; attemptIdx++) { if (!placedOrbs[attemptIdx]) continue; for (let logicalIdx = 0; logicalIdx < placedOrbs[attemptIdx].length; logicalIdx++) { const orbGroup = placedOrbs[attemptIdx][logicalIdx]; const elementId = `glyph-${attemptIdx}-${logicalIdx}`; const glyphElement = document.getElementById(elementId); if (orbGroup && glyphElement && glyphElement.style.display === 'block') { const worldPosition = new THREE.Vector3(); orbGroup.children[1].getWorldPosition(worldPosition); const screenPosition = worldPosition.clone().project(camera); const x = (screenPosition.x * 0.5 + 0.5) * window.innerWidth; const y = (-screenPosition.y * 0.5 + 0.5) * window.innerHeight; if (screenPosition.z > 1) { glyphElement.style.display = 'none'; } else { glyphElement.style.display = 'block'; glyphElement.style.left = `${x}px`; glyphElement.style.top = `${y}px`; } } else if (glyphElement && glyphElement.style.display === 'block') { glyphElement.style.display = 'none'; } } } }
+        // --- Handle Win/Loss (same) ---
+        function handleWin() { /* ... */ gameState = 'won'; showMessage(`You guessed the sequence in ${currentAttempt + 1} attempts!`, 10000); disableInteraction(); }
+        function handleLoss() { /* ... */ gameState = 'lost'; showMessage(`Out of attempts! The sequence was: [${getSequenceColorNames(secretSequence).join(', ')}]`, 10000); disableInteraction(); revealSequence(); }
+        // --- Reveal Secret Sequence (same) ---
+        function revealSequence() { /* ... */ const revealGroup = new THREE.Group(); revealGroup.position.set(0, GUESS_ROW_START_Y + 1.5, (currentAttempt + 1) * GUESS_ROW_Z_SPACING); secretSequence.forEach((paletteIndex, i) => { const palette = DISPLAY_PALETTES[paletteIndex]; const orb = createOrbGroup(palette); orb.position.x = (i - 2.5) * (ORB_RADIUS_OUTER * 2.5); revealGroup.add(orb); }); scene.add(revealGroup); }
+        // --- Helper to get color names (same) ---
+        function getSequenceColorNames(indices) { /* ... */ return indices.map(index => DISPLAY_PALETTES[index] ? DISPLAY_PALETTES[index].name : 'Unknown'); }
+        // --- Show Message Helper (same) ---
+        let messageTimeout; function showMessage(text, duration = 3000) { /* ... */ const messageElement=document.getElementById('message');messageElement.textContent=text;messageElement.style.display='block';clearTimeout(messageTimeout);if(duration>0){messageTimeout=setTimeout(()=>{messageElement.style.display='none';},duration);} }
+        // --- Mouse Move Handler (same) ---
+        let hoveredSlot = null; function onMouseMove(event) { /* ... */ if (gameState !== 'playing') { if (hoveredSlot) { hoveredSlot.material = slotMaterial; hoveredSlot = null; } return; } if (confirmedSelectedOrb === null) return; touchPos.x = (event.clientX / window.innerWidth) * 2 - 1; touchPos.y = -(event.clientY / window.innerHeight) * 2 + 1; raycaster.setFromCamera(touchPos, camera); const currentSlotTargets = guessSlotsData[currentAttempt]?.map(s => s.targetMesh) || []; if (hoveredSlot && hoveredSlot.material !== slotMaterial) { hoveredSlot.material = slotMaterial; hoveredSlot = null; } if (currentSlotTargets.length > 0) { const intersectsSlots = raycaster.intersectObjects(currentSlotTargets); if (intersectsSlots.length > 0) { const intersectedTarget = intersectsSlots[0].object; const slotUserData = intersectedTarget.userData; if (slotUserData.row === currentAttempt && slotUserData.type === 'slot' && !slotUserData.occupied) { const slotData = guessSlotsData[currentAttempt].find(s => s.targetMesh === intersectedTarget); if (slotData && slotData.mesh) { slotData.mesh.material = slotHoverMaterial; hoveredSlot = slotData.mesh; } } } } }
+        // --- Handle Window Resize (same) ---
+        function onWindowResize() { /* ... */ const width=window.innerWidth;const height=window.innerHeight;camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setSize(width,height);composer.setSize(width,height); }
+
+        // --- Animation Loop (Added History Row Scaling) ---
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            controls.update(delta);
+
+            // Smooth Container Movement
+            const containerMoveDiff = targetContainerZ - currentContainerZ;
+            if (Math.abs(containerMoveDiff) > 0.01) {
+                currentContainerZ += containerMoveDiff * delta * CONTAINER_MOVE_SPEED;
+                guessRowsContainer.position.z = currentContainerZ;
+            } else if (currentContainerZ !== targetContainerZ) {
+                currentContainerZ = targetContainerZ;
+                guessRowsContainer.position.z = currentContainerZ;
+            }
+
+            // Smooth Palette Rotation
+            /* ... palette rotation lerp ... */ let rotationDiff = targetPaletteRotation - currentPaletteRotation; let shortestDiff = Math.atan2(Math.sin(rotationDiff), Math.cos(rotationDiff)); let rotationStep = shortestDiff * delta * PALETTE_ROTATION_SPEED; if (Math.abs(shortestDiff) > 0.005) { currentPaletteRotation += rotationStep; paletteGroup.rotation.y = currentPaletteRotation; } else if (currentPaletteRotation !== targetPaletteRotation) { currentPaletteRotation = targetPaletteRotation; paletteGroup.rotation.y = currentPaletteRotation; }
+
+            // Smooth Board Rotation/Tilt (Applies to current row group)
+            if (currentGuessRowGroup) {
+                 /* ... board rotation/tilt lerp ... */ rotationDiff = targetBoardRotation - currentBoardRotation; shortestDiff = Math.atan2(Math.sin(rotationDiff), Math.cos(rotationDiff)); rotationStep = shortestDiff * delta * BOARD_ROTATION_SPEED; if (Math.abs(shortestDiff) > 0.005) { currentBoardRotation += rotationStep; currentGuessRowGroup.rotation.y = currentBoardRotation; } else if (currentBoardRotation !== targetBoardRotation) { currentBoardRotation = targetBoardRotation; currentGuessRowGroup.rotation.y = currentBoardRotation; } const tiltDiff = targetBoardTilt - currentBoardTilt; const tiltStep = tiltDiff * delta * BOARD_TILT_SPEED; if (Math.abs(tiltDiff) > 0.005) { currentBoardTilt += tiltStep; currentGuessRowGroup.rotation.x = currentBoardTilt; } else if (currentBoardTilt !== targetBoardTilt) { currentBoardTilt = targetBoardTilt; currentGuessRowGroup.rotation.x = currentBoardTilt; }
+            }
+
+            // Update Palette Highlighting & Bobbing
+            /* ... palette highlight/bobbing ... */ const anglePerOrb = (Math.PI * 2) / DISPLAY_PALETTES.length; const currentFrontIndexRaw = -currentPaletteRotation / anglePerOrb; const currentFrontIndex = Math.round(currentFrontIndexRaw) % DISPLAY_PALETTES.length; const closestIndex = (currentFrontIndex + DISPLAY_PALETTES.length) % DISPLAY_PALETTES.length; let newHighlightedOrb = paletteOrbsData[closestIndex]?.group || null; if (highlightedPaletteOrb && highlightedPaletteOrb !== newHighlightedOrb && highlightedPaletteOrb !== confirmedSelectedOrb) { highlightedPaletteOrb.scale.set(1, 1, 1); } if (newHighlightedOrb && newHighlightedOrb !== highlightedPaletteOrb) { if (newHighlightedOrb !== confirmedSelectedOrb) { newHighlightedOrb.scale.set(HIGHLIGHT_SCALE, HIGHLIGHT_SCALE, HIGHLIGHT_SCALE); } highlightedPaletteOrb = newHighlightedOrb; } else if (!newHighlightedOrb) { highlightedPaletteOrb = null; } paletteOrbsData.forEach(data => { const orbGroup = data.group; const bobble = Math.sin(clock.getElapsedTime() * 1.0 + data.index) * 0.05; orbGroup.position.y = bobble; if (orbGroup === confirmedSelectedOrb) { orbGroup.scale.set(SELECTION_SCALE, SELECTION_SCALE, SELECTION_SCALE); } else if (orbGroup === highlightedPaletteOrb) { orbGroup.scale.set(HIGHLIGHT_SCALE, HIGHLIGHT_SCALE, HIGHLIGHT_SCALE); } else { orbGroup.scale.set(1, 1, 1); } });
+
+            // *** Scale down previous rows ***
+            guessRowsContainer.children.forEach(group => {
+                if (group.isGroup && group.userData.attemptIndex !== undefined) {
+                    const age = currentAttempt - group.userData.attemptIndex;
+                    if (age > 0) { // Don't scale current row
+                        const targetScale = Math.max(0.1, 1.0 / (1.0 + age * HISTORY_ROW_SCALE_FACTOR)); // Gradual shrink, minimum scale 0.1
+                        // Smooth scaling
+                        group.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), delta * 5.0);
+                    } else {
+                         // Ensure current row is scale 1 (or lerp back if needed)
+                         group.scale.lerp(new THREE.Vector3(1, 1, 1), delta * 5.0);
+                    }
+                }
+            });
+
+            // Update HTML Glyph Positions
+            updateGlyphPositions();
+
+            // Render
+            if (composer) { composer.render(delta); } else { renderer.render(scene, camera); }
+        }
+
+        // --- Start ---
+        init();
+
+    </script>
+</body>
+</html>
+
+Key Changes:
+ * Row History Animation:
+   * Increased GUESS_ROW_Z_SPACING to -4.0 to push rows back further.
+   * Added attemptIndex to userData for each guessRowGroup in createGuessRow.
+   * Added logic in the animate loop to iterate through guessRowsContainer.children. For groups representing previous attempts (age > 0), it calculates a targetScale that decreases with age and smoothly interpolates the group's scale towards that target using lerp.
+ * Palette Layout: Updated PALETTE_Y_POS to 3.5 and PALETTE_ARC_RADIUS to 3.5. Adjusted camera Y position and lookAt slightly.
+ * Board Reset: Confirmed startNewAttempt resets board rotation/tilt targets to 0.
+Now, previous rows should recede further into the distance and shrink, creating a clearer view of the current row, and the palette should be positioned higher and tighter as requested.
