@@ -3,28 +3,340 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Astral Glyphs</title>
+    <title>Astral Glyphs (7 Slot)</title>
+    <!-- ADD Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap" rel="stylesheet">
+    <!-- Keep Cinzel for other UI if needed -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&display=swap" rel="stylesheet">
+
     <style>
-        /* ... All CSS styles remain the same as Step 10 ... */
-        body { margin: 0; overflow: hidden; background-color: #050005; color: #fff; font-family: sans-serif;}
-        canvas { display: block; }
-        #info { position: absolute; top: 10px; width: 100%; text-align: center; color: #ccc; z-index: 100; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        /* --- General Styles --- */
+        body { margin: 0; overflow: hidden; background-color: #050005; color: #fff; font-family: 'Roboto', sans-serif; font-weight: 300;} /* Default to Roboto Light */
+        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; } /* Canvas behind menu */
+
+        /* --- Keyframes for Floating Animation --- */
+        @keyframes floatAnimation {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); } /* Reduced float for game buttons */
+            100% { transform: translateY(0px); }
+        }
+         @keyframes floatAnimationMenu { /* Keep original float for menu */
+             0% { transform: translateY(0px); }
+             50% { transform: translateY(-8px); }
+             100% { transform: translateY(0px); }
+         }
+
+        /* --- NEW Main Menu Styles --- */
+        #main-menu {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100; /* Above canvas */
+            opacity: 1;
+            transition: opacity 0.5s ease-out;
+            pointer-events: none; /* Container doesn't block clicks by default */
+            padding-bottom: 10vh; /* Add padding to push content up from bottom orbs */
+            box-sizing: border-box;
+        }
+        #main-menu.hidden { opacity: 0; pointer-events: none; }
+
+        #menu-header {
+            text-align: center;
+            margin-bottom: 5vh; /* Space below header */
+            pointer-events: none; /* Header not clickable */
+        }
+
+        #menu-title-glyphs {
+            font-size: clamp(2.5em, 8vw, 4.5em); /* Responsive font size */
+            font-weight: 300; /* Match Roboto Light */
+            letter-spacing: 1px;
+            /* Gradient Text */
+            background: linear-gradient(to bottom, #e0e0ff, #a0a0ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            /* Subtle glow */
+            text-shadow: 0 0 10px rgba(150, 150, 255, 0.5), 0 0 20px rgba(150, 150, 255, 0.3);
+            margin: 0;
+            line-height: 1.1;
+        }
+
+        #menu-title-sub {
+            font-size: clamp(0.8em, 2.5vw, 1.1em);
+            font-weight: 300;
+            color: #b0b0cc; /* Lighter grey-purple */
+            margin-top: 5px;
+            letter-spacing: 0.5px;
+        }
+
+        #menu-options {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none; /* Container doesn't block */
+        }
+
+        .menu-button-html {
+            font-size: clamp(1.3em, 4vw, 1.8em); /* Responsive font size */
+            font-weight: 300;
+            letter-spacing: 1.5px;
+            padding: 10px 0;
+            margin: 1.5vh 0; /* Vertical spacing */
+            cursor: pointer;
+            min-width: 250px; /* Ensure minimum width */
+            text-align: center;
+            pointer-events: auto; /* Make buttons clickable */
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            transition: transform 0.2s ease-out, text-shadow 0.2s ease-out;
+             /* Add Floating Animation */
+            animation: floatAnimationMenu 4s ease-in-out infinite; /* Use Menu specific animation */
+        }
+        /* Desynchronize animations */
+        .menu-button-html:nth-child(1) { animation-delay: 0s; }
+        .menu-button-html:nth-child(2) { animation-delay: 0.3s; }
+        .menu-button-html:nth-child(3) { animation-delay: 0.6s; }
+
+
+        /* Specific Gradients & Hover Glows */
+        #daily-button-html {
+            background-image: linear-gradient(to bottom, #A0FFFF, #40A0A0);
+        }
+        #daily-button-html:hover {
+            transform: scale(1.08);
+            text-shadow: 0 0 12px rgba(100, 200, 200, 0.7), 0 0 20px rgba(100, 200, 200, 0.4);
+        }
+
+        #astral-button-html {
+            background-image: linear-gradient(to bottom, #B0FFB0, #50A050);
+        }
+         #astral-button-html:hover {
+             transform: scale(1.08);
+             text-shadow: 0 0 12px rgba(100, 200, 100, 0.7), 0 0 20px rgba(100, 200, 100, 0.4);
+         }
+
+        #archive-button-html {
+            background-image: linear-gradient(to bottom, #FFF0D0, #C0A070);
+        }
+        #archive-button-html:hover {
+             transform: scale(1.08);
+             text-shadow: 0 0 12px rgba(220, 200, 150, 0.7), 0 0 20px rgba(220, 200, 150, 0.4);
+         }
+
+        /* Info Icon Link */
+         #menu-info-icon {
+             position: absolute;
+             top: 20px;
+             right: 25px;
+             font-size: 1.8em;
+             font-family: 'Times New Roman', serif; /* Or a suitable serif font */
+             font-weight: bold;
+             color: #cccccc;
+             text-decoration: none;
+             cursor: pointer;
+             pointer-events: auto; /* Clickable */
+             z-index: 110;
+             transition: color 0.2s ease, transform 0.2s ease;
+         }
+          #menu-info-icon:hover {
+              color: #ffffff;
+              transform: scale(1.1);
+          }
+
+        /* --- Coming Soon Screen --- */
+        #coming-soon-menu {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: none; /* Initially hidden */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 105; /* Above menu/canvas */
+            background-color: rgba(5, 0, 5, 0.85); /* Semi-transparent background */
+            font-family: 'Roboto', sans-serif;
+            font-weight: 300;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s ease-out;
+            pointer-events: none; /* Container non-blocking by default */
+        }
+         #coming-soon-menu.visible {
+             display: flex;
+             opacity: 1;
+             pointer-events: auto; /* Allow interaction with children when visible */
+         }
+         #coming-soon-menu h2 {
+             font-size: clamp(1.8em, 5vw, 2.5em);
+             color: #e0e0ff;
+             margin-bottom: 30px;
+             pointer-events: none; /* Text not clickable */
+         }
+         #coming-soon-back-button {
+             font-size: clamp(1.1em, 3vw, 1.4em);
+             color: #a0a0ff;
+             border: 1px solid #604080;
+             padding: 8px 20px;
+             border-radius: 5px;
+             cursor: pointer;
+             pointer-events: auto; /* Button IS clickable */
+             transition: background-color 0.2s ease, color 0.2s ease;
+         }
+         #coming-soon-back-button:hover {
+             background-color: rgba(100, 80, 140, 0.5);
+             color: #ffffff;
+         }
+
+
+        /* --- Game UI Styles (Keep existing, ensure display: none initially) --- */
+        #info { position: absolute; top: 10px; width: 100%; text-align: center; color: #ccc; z-index: 100; /* Below Info Icon */ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; pointer-events: none; display: none; }
         #message { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); background-color: rgba(10, 0, 20, 0.75); border: 1px solid rgba(150, 100, 200, 0.5); color: #eee; padding: 10px 20px; border-radius: 5px; display: none; z-index: 100; text-align: center; pointer-events: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         #submit-button { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); padding: 10px 20px; font-size: 16px; font-family: 'Cinzel', serif; font-weight: bold; letter-spacing: 1px; background: linear-gradient(to bottom, #201030, #100818); color: #e0e0ff; border: 1px solid #503070; border-radius: 8px; cursor: pointer; z-index: 101; display: none; box-shadow: 0 0 8px rgba(150, 100, 255, 0.5), 0 0 15px rgba(150, 100, 255, 0.3); transition: background 0.3s ease, box-shadow 0.3s ease, color 0.3s ease; }
         #submit-button:hover:not(:disabled) { background: linear-gradient(to bottom, #302048, #201030); color: #ffffff; box-shadow: 0 0 12px rgba(180, 140, 255, 0.7), 0 0 25px rgba(180, 140, 255, 0.5); }
         #submit-button:active:not(:disabled) { background: linear-gradient(to bottom, #180828, #100818); box-shadow: 0 0 5px rgba(150, 100, 255, 0.4), 0 0 10px rgba(150, 100, 255, 0.2); }
         #submit-button:disabled { background: linear-gradient(to bottom, #333, #222); color: #777; border-color: #555; box-shadow: none; cursor: not-allowed; }
-        #glyph-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; }
+        #glyph-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; display: none; /* Initially hidden */ z-index: 50; /* Below game UI */ }
         .glyph { position: absolute; color: #fff; font-size: 24px; font-weight: bold; text-shadow: 0 0 5px #fff, 0 0 10px #0ff; transform: translate(-50%, -50%); pointer-events: none; display: none; z-index: 90; }
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&display=swap');
+
+        /* --- MODIFIED Game Action Buttons (Back/New Sequence) --- */
+        .game-action-button {
+            /* --- Core Styles from .menu-button-html --- */
+            font-size: clamp(0.9em, 2.5vw, 1.1em); /* Slightly smaller than main menu */
+            font-family: 'Roboto', sans-serif; /* Match font */
+            font-weight: 300; /* Match weight */
+            letter-spacing: 1.2px; /* Match spacing */
+            padding: 6px 0; /* Adjusted padding */
+            min-width: 130px; /* Adjusted width */
+            text-align: center;
+            cursor: pointer;
+            pointer-events: auto; /* Make buttons clickable */
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            transition: transform 0.2s ease-out, text-shadow 0.2s ease-out;
+            /* Add Floating Animation */
+            animation: floatAnimation 4s ease-in-out infinite; /* Use less intense float */
+            animation-delay: 0.5s; /* Delay one slightly */
+
+            /* --- Positioning & Initial State --- */
+            position: absolute;
+            top: 10px;
+            z-index: 101;
+            display: none; /* Hidden initially */
+
+            /* --- Remove Old Styles --- */
+            /* background: linear-gradient(to bottom, #201030, #100818); */ /* Replaced by gradient background-image */
+            /* color: #c0c0ff; */ /* Replaced by transparent + background-clip */
+            /* border: 1px solid #503070; */ /* Removed border for this style */
+            /* border-radius: 6px; */ /* Removed border-radius */
+            /* box-shadow: 0 0 6px rgba(150, 100, 255, 0.4); */ /* Replaced by text-shadow */
+            /* letter-spacing: 0.5px; */ /* Overridden */
+            /* font-family: 'Cinzel', serif; */ /* Overridden */
+            /* font-weight: bold; */ /* Overridden */
+            /* font-size: 14px; */ /* Overridden */
+            /* padding: 8px 15px; */ /* Overridden */
+        }
+
+        /* --- Specific Game Action Button Styles --- */
+        #back-button {
+            left: 15px; /* Keep position */
+            background-image: linear-gradient(to bottom, #D0D0FF, #8080C0); /* New gradient (Light Blue/Purple) */
+            animation-delay: 0.2s; /* Offset animation */
+        }
+        #back-button:hover {
+            transform: scale(1.08) translateY(-5px); /* Combine transforms, keep float offset */
+            text-shadow: 0 0 12px rgba(160, 160, 220, 0.7), 0 0 20px rgba(160, 160, 220, 0.4);
+        }
+
+        #new-sequence-button {
+            right: 15px; /* Keep position */
+            background-image: linear-gradient(to bottom, #B0FFB0, #50A050); /* Match Astral Green */
+            animation-delay: 0.7s; /* Offset animation */
+        }
+        #new-sequence-button:hover {
+             transform: scale(1.08) translateY(-5px); /* Combine transforms, keep float offset */
+             text-shadow: 0 0 12px rgba(100, 200, 100, 0.7), 0 0 20px rgba(100, 200, 100, 0.4);
+         }
+
+
+         /* --- Info Popup Styles (Keep existing) --- */
+         #info-popup { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(5, 0, 5, 0.9); display: none; justify-content: center; align-items: center; z-index: 300; padding: 20px; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+         #info-content { background-color: rgba(15, 5, 25, 0.95); border: 1px solid #503070; border-radius: 10px; padding: 25px; max-width: 600px; max-height: 80vh; overflow-y: auto; color: #eee; box-shadow: 0 0 20px rgba(150, 100, 255, 0.3); }
+         #info-content h2 { font-family: 'Cinzel', serif; color: #e0e0ff; text-align: center; margin-top: 0; margin-bottom: 20px; font-size: 1.8em; }
+         #info-content p, #info-content li { line-height: 1.6; font-size: 1em; color: #ccc; }
+         #info-content ul { padding-left: 25px; margin-bottom: 15px; }
+         #info-content strong { color: #e0e0ff; font-weight: bold; }
+         #close-info-button { display: block; margin: 20px auto 0 auto; padding: 10px 20px; font-size: 1em; font-family: 'Cinzel', serif; font-weight: bold; letter-spacing: 1px; background: linear-gradient(to bottom, #281838, #180c20); color: #d0d0ff; border: 1px solid #604080; border-radius: 8px; cursor: pointer; box-shadow: 0 0 8px rgba(150, 100, 255, 0.4), 0 0 15px rgba(150, 100, 255, 0.2); transition: background 0.3s ease, box-shadow 0.3s ease, color 0.3s ease; }
+         #close-info-button:hover { background: linear-gradient(to bottom, #382850, #281838); color: #ffffff; }
+
     </style>
 </head>
 <body>
+    <!-- ===== NEW HTML Main Menu ===== -->
+    <div id="main-menu" class="hidden"> <!-- Start hidden -->
+        <a href="#" id="menu-info-icon">i</a> <!-- Info Icon Link -->
+        <div id="menu-header">
+            <h1 id="menu-title-glyphs">Δ§+RΔ|&|¥PH§</h1>
+            <p id="menu-title-sub">(ASTRAL GLYPHS)</p>
+        </div>
+        <div id="menu-options">
+            <div class="menu-button-html" id="daily-button-html" data-action="startDaily">DAILY GLYPHS</div>
+            <div class="menu-button-html" id="astral-button-html" data-action="startAstral">ASTRAL TRIALS</div>
+            <div class="menu-button-html" id="archive-button-html" data-action="showArchive">THE ARCHIVE</div>
+        </div>
+    </div>
+
+     <!-- ===== NEW HTML Coming Soon Screen ===== -->
+     <div id="coming-soon-menu"> <!-- Starts hidden via CSS -->
+         <h2>Coming Soon...</h2>
+         <div id="coming-soon-back-button" data-action="backToMenu">Back</div>
+     </div>
+
+    <!-- ===== INFO POPUP (Keep this) ===== -->
+    <div id="info-popup">
+        <div id="info-content">
+             <!-- ... existing info content from previous version ... -->
+             <h2>How to Play Astral Glyphs</h2>
+             <p>Guess the secret sequence of 7 colored orbs in 6 tries.</p>
+             <ul>
+                 <li><strong>Select Color:</strong> Tap ANY orb in the top palette to select its color. Swipe the palette left/right to bring different colors closer.</li>
+                 <li><strong>Place Orb:</strong> Tap an empty hexagonal slot (or the center slot) on the current row to place the selected color.</li>
+                 <li><strong>Remove Orb:</strong> Tap an already placed orb on the current row to remove it.</li>
+                 <li><strong>Tilt Board:</strong> Swipe up/down on the bottom half of the screen to tilt the current guess row. (Rotation is disabled).</li>
+                 <li><strong>Submit:</strong> Once all 7 slots are filled, the "Submit Guess" button appears. Tap it to check your guess.</li>
+             </ul>
+             <p><strong>Feedback:</strong></p>
+             <ul>
+                 <li><span style="color: #00ff00;">Green Slot:</span> Correct color in the correct position. A glyph appears and the orb **glows with inner energy**!</li>
+                 <li><span style="color: #ffff00;">Yellow Slot:</span> Correct color but in the wrong position.</li>
+                 <li><span style="color: #808080;">Gray Slot:</span> Color not in the sequence.</li>
+             </ul>
+              <p><strong>Game Modes:</strong></p>
+              <ul>
+                 <li><strong>Daily Glyphs:</strong> Everyone gets the same puzzle each day! Use the Back button to return to the menu.</li>
+                 <li><strong>Astral Trials:</strong> A new random puzzle every time you play. Use 'New Sequence' for a fresh puzzle or 'Back' to return to the menu.</li>
+             </ul>
+              <p><strong>The Archive:</strong> Unlock lore and story fragments by successfully solving glyph sequences! (Coming Soon)</p>
+             <button id="close-info-button">Close</button>
+         </div>
+    </div>
+
+    <!-- Game UI (Buttons now use .game-action-button class) -->
     <div id="info">Astral Glyphs</div>
+    <button class="game-action-button" id="back-button">Back</button>
+    <button class="game-action-button" id="new-sequence-button">New Sequence</button>
     <div id="message">Make your first guess!</div>
     <div id="glyph-overlay"></div>
     <button id="submit-button">Submit Guess</button>
 
+    <!-- Canvas will be added here by Three.js -->
+
+    <!-- Script includes (THREE core, controls, postprocessing ONLY) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
@@ -35,203 +347,1028 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
 
     <script>
-        // --- Global Variables, Groups, Game State, Touch State ---
+        // --- Global Variables (Keep as is) ---
         let scene, camera, renderer, composer, bloomPass, controls; let environmentMap; const clock = new THREE.Clock(); const raycaster = new THREE.Raycaster(); const touchPos = new THREE.Vector2();
-        let paletteGroup; let guessRowsContainer; let currentGuessRowGroup;
+        let paletteGroup; let guessRowsContainer; let currentGuessRowGroup; let revealGroup = null;
         let paletteOrbsData = []; let guessSlotsData = []; let placedOrbs = [];
         let secretSequence = []; let currentAttempt = 0; const MAX_ATTEMPTS = 6; let gameState = 'playing';
         let selectedPaletteIndex = null; let highlightedPaletteOrb = null; let confirmedSelectedOrb = null;
         let targetPaletteRotation = 0; let currentPaletteRotation = 0; let targetPaletteIndex = 0;
-        let targetBoardRotation = 0; let currentBoardRotation = 0; let targetBoardTilt = 0; let currentBoardTilt = 0;
+        let targetBoardRotation = 0; let currentBoardRotation = 0;
+        let targetBoardTilt = 0; let currentBoardTilt = 0;
         let targetContainerZ = 0; let currentContainerZ = 0; const CONTAINER_MOVE_SPEED = 2.0;
-        let touchStartX = 0; let touchStartY = 0; let touchStartTime = 0; let touchMoved = false;
+        let touchStartX = 0; let touchStartY = 0; let touchStartTime = 0; let touchMoved = false; let isMouseDown = false; let mouseStartX = 0; let mouseStartY = 0; let mouseDownTime = 0; // Added mouse down tracking
+        let gameMode = 'Daily Glyphs';
+        let currentRng = Math.random;
 
-        // --- Constants ---
+        // --- View State & Menu Element Refs ---
+        let currentView = 'Loading';
+        let bottomOrbsGroup; // To hold the 3D decorative orbs
+        const mainMenuElement = document.getElementById('main-menu');
+        const comingSoonElement = document.getElementById('coming-soon-menu');
+        const infoIconElement = document.getElementById('menu-info-icon');
+
+        // --- Constants (Keep as is) ---
         const BACKGROUND_COLOR = 0x050005; const FOG_DENSITY = 0.04;
         const ORB_RADIUS_OUTER = 0.5; const ORB_RADIUS_INNER = 0.3;
         const SLOT_RADIUS = 1.1; const SLOT_TORUS_RADIUS = 0.45; const SLOT_TORUS_TUBE = 0.03; const SLOT_TARGET_RADIUS = SLOT_TORUS_RADIUS + 0.15;
-        const PALETTE_ARC_RADIUS = 3.5; // *** Smaller arc radius ***
-        const PALETTE_Y_POS = 3.5;      // *** Higher Y position ***
-        const GUESS_ROW_START_Y = -1.0;
-        const GUESS_ROW_Z_SPACING = -4.0; // *** Increased Z spacing ***
+        const PALETTE_ARC_RADIUS = 2.3; const PALETTE_Y_POS = 1.8;
+        const GUESS_ROW_START_Y = -2.0; const GUESS_ROW_Z_SPACING = -3.0;
         const HIGHLIGHT_SCALE = 1.15; const SELECTION_SCALE = 1.3;
         const PALETTE_ROTATION_SPEED = 5.0; const BOARD_ROTATION_SPEED = 5.0; const BOARD_TILT_SPEED = 3.0;
-        const BOARD_ROTATION_STEP = Math.PI / 3; const MAX_BOARD_TILT = Math.PI / 5; const MIN_BOARD_TILT = -Math.PI / 12;
+        const BOARD_ROTATION_STEP = Math.PI / 3;
+        const MAX_BOARD_TILT = Math.PI / 5; const MIN_BOARD_TILT = -Math.PI / 12;
         const SWIPE_THRESHOLD_X = 40; const SWIPE_THRESHOLD_Y = 40; const TAP_THRESHOLD_TIME = 300; const TAP_THRESHOLD_DIST = 20;
         const FEEDBACK_COLORS = { green: 0x00ff00, yellow: 0xffff00, gray: 0x808080 };
-        const HISTORY_ROW_SCALE_FACTOR = 0.2; // How much rows shrink per step back
+        const HISTORY_ROW_SCALE_FACTOR = 0.4;
+        const SEQUENCE_LENGTH = 7;
+        // Removed old particle constants, new ones are inside createInternalParticleSystem
 
-        // --- Color Palettes & Glyph Map (Same as Step 9) ---
-        const DISPLAY_PALETTES = [ /* ... palettes from step 9 ... */ { name: 'Red', bubble: 0xFA8072, crystal: 0xFF0000, emissive: 0xFF0000 }, { name: 'Purple', bubble: 0x9370DB, crystal: 0x8A2BE2, emissive: 0x8A2BE2 }, { name: 'Yellow', bubble: 0xFFFACD, crystal: 0xFFFF00, emissive: 0xFFFF00 }, { name: 'Orange', bubble: 0xFF8C00, crystal: 0xFF4500, emissive: 0xFF4500 }, { name: 'Blue', bubble: 0x87CEFA, crystal: 0x0000FF, emissive: 0x0000FF }, { name: 'Green', bubble: 0x98FB98, crystal: 0x00FF00, emissive: 0x00FF00 }, { name: 'Black', bubble: 0x333333, crystal: 0x222222, emissive: 0x000000 }, { name: 'White', bubble: 0xFFFFFF, crystal: 0xF5F5F5, emissive: 0xFFFFFF }, { name: 'Teal', bubble: 0x20B2AA, crystal: 0x008080, emissive: 0x008080 }, { name: 'Pink', bubble: 0xFFB6C1, crystal: 0xFF1493, emissive: 0xFF1493 }, ];
+        // --- Helper Functions (Keep as is) ---
+        function mulberry32(seed) { return function() { var t = seed += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; } }
+        function getDailySeed() { const today = new Date(); const year = today.getFullYear(); const month = today.getMonth() + 1; const day = today.getDate(); const seed = year * 10000 + month * 100 + day; console.log(`Generating Daily Seed: ${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')} -> ${seed}`); return seed; }
+
+        // --- Color Palettes & Glyph Map (Keep as is) ---
+        const DISPLAY_PALETTES = [ { name: 'Red', bubble: 0xFA8072, crystal: 0xFF0000, emissive: 0xFF0000 }, { name: 'Purple', bubble: 0x9370DB, crystal: 0x8A2BE2, emissive: 0x8A2BE2 }, { name: 'Yellow', bubble: 0xFFFACD, crystal: 0xFFFF00, emissive: 0xFFFF00 }, { name: 'Orange', bubble: 0xFF8C00, crystal: 0xFF4500, emissive: 0xFF4500 }, { name: 'Blue', bubble: 0x87CEFA, crystal: 0x0000FF, emissive: 0x0000FF }, { name: 'Green', bubble: 0x98FB98, crystal: 0x00FF00, emissive: 0x00FF00 }, { name: 'Black', bubble: 0x333333, crystal: 0x222222, emissive: 0x555555 }, { name: 'White', bubble: 0xFFFFFF, crystal: 0xF5F5F5, emissive: 0xFFFFFF }, { name: 'Teal', bubble: 0x20B2AA, crystal: 0x008080, emissive: 0x008080 }, { name: 'Pink', bubble: 0xFFB6C1, crystal: 0xFF1493, emissive: 0xFF1493 }, ];
         const GLYPH_MAP = ['#', '∆', '@', '§', '*', '$', '¥', '?', '~', '&'];
 
-        // --- Shared Geometries & Materials ---
-        const bubbleGeometry = new THREE.SphereGeometry(ORB_RADIUS_OUTER, 32, 32); const crystalGeometry = new THREE.IcosahedronGeometry(ORB_RADIUS_INNER, 1); const slotGeometry = new THREE.TorusGeometry(SLOT_TORUS_RADIUS, SLOT_TORUS_TUBE, 16, 64); const slotMaterial = new THREE.MeshBasicMaterial({ color: 0x555555, side: THREE.DoubleSide, transparent: true, opacity: 0.7 }); const slotHoverMaterial = new THREE.MeshBasicMaterial({ color: 0xeeeeee, emissive: 0xaaaaaa, emissiveIntensity: 0.3, side: THREE.DoubleSide, transparent: true, opacity: 0.95 }); const slotTargetGeometry = new THREE.CircleGeometry(SLOT_TARGET_RADIUS, 32); const slotTargetMaterial = new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide });
+        // --- Shared Geometries & Materials (Keep as is) ---
+        const bubbleGeometry = new THREE.SphereGeometry(ORB_RADIUS_OUTER, 32, 32);
+        const crystalGeometry = new THREE.IcosahedronGeometry(ORB_RADIUS_INNER, 1);
+        const slotGeometry = new THREE.TorusGeometry(SLOT_TORUS_RADIUS, SLOT_TORUS_TUBE, 16, 64);
+        const slotMaterial = new THREE.MeshBasicMaterial({ color: 0x555555, side: THREE.DoubleSide, transparent: true, opacity: 0.7 });
+        const slotHoverMaterial = new THREE.MeshBasicMaterial({ color: 0xeeeeee, emissive: 0xaaaaaa, emissiveIntensity: 0.3, side: THREE.DoubleSide, transparent: true, opacity: 0.95 });
+        const slotTargetGeometry = new THREE.CircleGeometry(SLOT_TARGET_RADIUS, 32);
+        const slotTargetMaterial = new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide });
 
+        // --- Menu and Game State Management (Keep as is) ---
+        const infoPopup = document.getElementById('info-popup');
+        const closeInfoButton = document.getElementById('close-info-button');
+        const backButton = document.getElementById('back-button');
+        const newSequenceButton = document.getElementById('new-sequence-button');
+        const gameInfoDiv = document.getElementById('info');
+        const gameMessageDiv = document.getElementById('message');
+        const gameGlyphOverlay = document.getElementById('glyph-overlay');
+        const gameSubmitButton = document.getElementById('submit-button');
 
-        // --- Initialization ---
-        function init() {
-            scene = new THREE.Scene(); scene.background = new THREE.Color(BACKGROUND_COLOR); scene.fog = new THREE.FogExp2(BACKGROUND_COLOR, FOG_DENSITY);
-            const aspect = window.innerWidth / window.innerHeight; camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
-            camera.position.set(0, 2.5, 9); // *** Adjusted camera Y slightly for higher palette ***
-            camera.lookAt(new THREE.Vector3(0, 1.0, 0)); // *** Adjusted lookAt Y slightly ***
+        let gameInitialized = false;
+        let glyphElements = {}; // Moved declaration here
 
-            renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(window.devicePixelRatio); renderer.physicallyCorrectLights = true; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.9; renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; document.body.appendChild(renderer.domElement);
-            setupControls(); setupLighting(); guessRowsContainer = new THREE.Group(); scene.add(guessRowsContainer); generateSecretSequence();
-            setupEnvironmentMap(() => {
-                createPaletteOrbs(); startNewAttempt(); setupPostProcessing(); setupInteraction(); animate(); showMessage("Make your first guess!"); updateSubmitButtonState();
-            });
-            window.addEventListener('resize', onWindowResize, false);
-            document.getElementById('submit-button').addEventListener('touchstart', (event) => { console.log("Submit button touchstart triggered"); event.stopPropagation(); event.preventDefault(); handleSubmit(); }, { passive: false });
-            document.getElementById('submit-button').addEventListener('click', (event) => { console.log("Submit button click triggered (fallback)"); handleSubmit(); });
-        }
+                // --- MODIFIED View Management Functions (Focus on Pointer Events & Display) ---
+        function showView(viewName) {
+            console.log("Switching view to:", viewName);
+            currentView = viewName;
+            const canvas = renderer?.domElement;
 
-        // --- Generate Secret Sequence (same) ---
-        function generateSecretSequence() { /* ... Same secret generation ... */ const indices = Array.from({ length: 10 }, (_, i) => i); for (let i = indices.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [indices[i], indices[j]] = [indices[j], indices[i]]; } secretSequence = indices.slice(0, 6); console.log("Secret Sequence (Indices):", secretSequence); }
-        // --- Start New Attempt (same) ---
-        function startNewAttempt() { /* ... Same start new attempt ... */ if (currentAttempt >= MAX_ATTEMPTS) return; targetBoardRotation = 0; targetBoardTilt = 0; currentGuessRowGroup = createGuessRow(currentAttempt); guessRowsContainer.add(currentGuessRowGroup); targetContainerZ = -(currentAttempt * GUESS_ROW_Z_SPACING); console.log(`Starting Attempt ${currentAttempt}, Target Container Z: ${targetContainerZ.toFixed(2)}`); updateSubmitButtonState(); }
-        // --- OrbitControls Setup (same) ---
-        function setupControls() { /* ... Same OrbitControls setup ... */ controls = new THREE.OrbitControls(camera, renderer.domElement); controls.enableDamping = true; controls.dampingFactor = 0.1; controls.screenSpacePanning = false; controls.enablePan = false; controls.enableRotate = false; controls.minDistance = 5; controls.maxDistance = 15; }
-        // --- Lighting Setup (same) ---
-        function setupLighting() { /* ... Same lighting code ... */ const ambientLight=new THREE.AmbientLight(0xffffff,0.25);scene.add(ambientLight);const keyLight=new THREE.DirectionalLight(0xffffff,1.0);keyLight.position.set(5,5,5);keyLight.castShadow=true;keyLight.shadow.mapSize.width=1024;keyLight.shadow.mapSize.height=1024;keyLight.shadow.camera.near=0.5;keyLight.shadow.camera.far=50;scene.add(keyLight);const fillLight=new THREE.DirectionalLight(0xffaaff,0.5);fillLight.position.set(-5,-3,2);scene.add(fillLight);const rimLight=new THREE.SpotLight(0xaaaaff,1.5,20,Math.PI/6,0.5);rimLight.position.set(0,6,-5);rimLight.target.position.set(0,0,0);scene.add(rimLight);scene.add(rimLight.target); }
-        // --- Environment Map Setup (same) ---
-        function setupEnvironmentMap(callback) { /* ... Same env map loading code ... */ const loader=new THREE.CubeTextureLoader();const path='https://threejs.org/examples/textures/cube/pisa/';const urls=[path+'px.png',path+'nx.png',path+'py.png',path+'ny.png',path+'pz.png',path+'nz.png'];loader.load(urls,(texture)=>{texture.encoding=THREE.sRGBEncoding;scene.environment=texture;environmentMap=texture;console.log("Environment map loaded.");if(callback)callback();},undefined,(error)=>{console.error('Error loading environment map:',error);if(callback)callback();}); }
-        // --- Create Palette Orbs (Uses updated constants) ---
-        function createPaletteOrbs() { /* ... Same palette creation code, uses new PALETTE_Y_POS, PALETTE_ARC_RADIUS ... */ paletteGroup = new THREE.Group(); paletteGroup.position.y = PALETTE_Y_POS; scene.add(paletteGroup); const angleStep = (Math.PI * 2) / DISPLAY_PALETTES.length; paletteOrbsData = []; DISPLAY_PALETTES.forEach((palette, index) => { const orbGroup = createOrbGroup(palette); const angle = index * angleStep; orbGroup.position.x = PALETTE_ARC_RADIUS * Math.sin(angle); orbGroup.position.z = PALETTE_ARC_RADIUS * Math.cos(angle); orbGroup.userData = { type: 'palette', index: index }; orbGroup.children[0].userData = { parentGroup: orbGroup }; paletteOrbsData.push({ group: orbGroup, index: index }); paletteGroup.add(orbGroup); }); console.log("Palette orbs created and grouped."); }
+            // --- Hide ALL view-specific elements first using display: none ---
+            mainMenuElement.style.display = 'none'; // Use display: none to hide completely
+            mainMenuElement.style.opacity = '0';    // Keep for potential transitions if needed later
+            comingSoonElement.style.display = 'none';// Use display: none
+            comingSoonElement.style.opacity = '0';   // Keep for transitions
 
-        // --- Create Guess Row (Adds attemptIndex to userData) ---
-        function createGuessRow(attemptIndex) {
-            const group = new THREE.Group();
-            group.position.y = GUESS_ROW_START_Y;
-            group.position.z = attemptIndex * GUESS_ROW_Z_SPACING;
-            // *** Store attempt index on the group for scaling ***
-            group.userData.attemptIndex = attemptIndex;
+            gameInfoDiv.style.display = 'none';
+            gameMessageDiv.style.display = 'none';
+            gameGlyphOverlay.style.display = 'none';
+            gameSubmitButton.style.display = 'none';
+            backButton.style.display = 'none';
+            newSequenceButton.style.display = 'none';
+            hideInfoPopup(); // Ensure info popup is hidden
 
-            const hexRadius = SLOT_RADIUS;
-            const positions = [ /* ... Same hex positions ... */ new THREE.Vector3(hexRadius, 0, 0), new THREE.Vector3(hexRadius / 2, 0, -hexRadius * Math.sqrt(3) / 2), new THREE.Vector3(-hexRadius / 2, 0, -hexRadius * Math.sqrt(3) / 2), new THREE.Vector3(-hexRadius, 0, 0), new THREE.Vector3(-hexRadius / 2, 0, hexRadius * Math.sqrt(3) / 2), new THREE.Vector3(hexRadius / 2, 0, hexRadius * Math.sqrt(3) / 2), ];
-            guessSlotsData[attemptIndex] = [];
-            placedOrbs[attemptIndex] = new Array(6).fill(null);
+            // *** Default canvas to NOT blocking clicks (but we override below) ***
+            if (canvas) canvas.style.pointerEvents = 'none';
+            if (paletteGroup) paletteGroup.visible = false;
+            if (guessRowsContainer) guessRowsContainer.visible = false;
+            if (revealGroup) revealGroup.visible = false; // Ensure reveal group is hidden
+            if (bottomOrbsGroup) bottomOrbsGroup.visible = false;
 
-            for (let i = 0; i < 6; i++) {
-                const slotMesh = new THREE.Mesh(slotGeometry, slotMaterial.clone());
-                slotMesh.position.copy(positions[i]);
-                slotMesh.rotation.x = Math.PI / 2;
-                const slotTargetMesh = new THREE.Mesh(slotTargetGeometry, slotTargetMaterial);
-                slotTargetMesh.position.copy(positions[i]);
-                slotTargetMesh.rotation.x = Math.PI / 2;
-                // *** Add attemptIndex to commonUserData ***
-                const commonUserData = { type: 'slot', physicalIndex: i, row: attemptIndex, occupied: false, attemptIndex: attemptIndex };
-                slotMesh.userData = commonUserData; slotTargetMesh.userData = commonUserData;
-                guessSlotsData[attemptIndex].push({ mesh: slotMesh, targetMesh: slotTargetMesh, index: i, row: attemptIndex, occupied: false });
-                group.add(slotMesh); group.add(slotTargetMesh);
-            }
-             group.rotation.y = 0; group.rotation.x = 0; // Start flat and forward
-             console.log(`Guess row ${attemptIndex} created at local Z ${group.position.z.toFixed(2)}.`);
-             return group;
-        }
+            // --- Show elements for the target view ---
+            switch (viewName) {
+                case 'MainMenu':
+                    mainMenuElement.style.display = 'flex'; // Show using display
+                    // Trigger fade-in (optional, relies on CSS transition for opacity)
+                    requestAnimationFrame(() => {
+                        mainMenuElement.style.opacity = '1';
+                    });
+                    // Menu container itself doesn't block, buttons inside do (CSS)
+                    mainMenuElement.style.pointerEvents = 'none';
+                    if (bottomOrbsGroup) bottomOrbsGroup.visible = true;
+                    // Canvas should NOT block clicks for the menu
+                    if (canvas) canvas.style.pointerEvents = 'none';
 
-        // --- Helper Function to Create Orb Group (same) ---
-        function createOrbGroup(palette) { /* ... Same orb group creation code with B/W handling ... */ let crystalEmissiveIntensity = 1.5; let crystalMetalness = 0.2; let crystalRoughness = 0.3; let crystalColor = palette.crystal; let bubbleTransmission = 0.9; let bubbleOpacity = 0.9; if (palette.name === 'Black') { crystalMetalness = 0.9; crystalRoughness = 0.2; crystalColor = 0x111111; crystalEmissiveIntensity = 0; bubbleTransmission = 0.5; bubbleOpacity = 0.8; } else if (palette.name === 'White') { crystalEmissiveIntensity = 0.5; crystalColor = 0xEAEAEA; } const crystalMaterial = new THREE.MeshStandardMaterial({ color: crystalColor, emissive: palette.emissive, emissiveIntensity: crystalEmissiveIntensity, metalness: crystalMetalness, roughness: crystalRoughness, envMap: environmentMap, envMapIntensity: (palette.name === 'Black' ? 0.8 : 0.3), toneMapped: false }); const crystalMesh = new THREE.Mesh(crystalGeometry, crystalMaterial); crystalMesh.castShadow = true; const bubbleMaterial = new THREE.MeshPhysicalMaterial({ color: palette.bubble, metalness: (palette.name === 'Black' ? 0.2 : 0.8), roughness: 0.05, transmission: bubbleTransmission, transparent: true, opacity: bubbleOpacity, ior: 1.8, reflectivity: 0.9, envMap: environmentMap, envMapIntensity: (palette.name === 'Black' ? 1.5 : 1.0), clearcoat: 0.5, clearcoatRoughness: 0.1 }); const bubbleMesh = new THREE.Mesh(bubbleGeometry, bubbleMaterial); bubbleMesh.receiveShadow = true; const orbGroup = new THREE.Group(); orbGroup.add(bubbleMesh); orbGroup.add(crystalMesh); bubbleMesh.userData = { parentGroup: orbGroup, type: 'placed_orb_bubble' }; orbGroup.userData = { paletteIndex: DISPLAY_PALETTES.indexOf(palette) }; return orbGroup; }
-        // --- Post-Processing Setup (same) ---
-        function setupPostProcessing() { /* ... Same post-processing setup ... */ composer=new THREE.EffectComposer(renderer);const renderPass=new THREE.RenderPass(scene,camera);composer.addPass(renderPass);bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth,window.innerHeight),1.2,0.5,0.6);composer.addPass(bloomPass);console.log("Post-processing setup complete."); }
-        // --- Interaction Setup (Touch Listeners - same) ---
-        function setupInteraction() { /* ... Same touch listener setup ... */ window.addEventListener('touchstart', onTouchStart, { passive: false }); window.addEventListener('touchmove', onTouchMove, { passive: false }); window.addEventListener('touchend', onTouchEnd, false); window.addEventListener('mousemove', onMouseMove, false); }
-        // --- Touch Handlers (same) ---
-        function onTouchStart(event) { /* ... */ event.preventDefault(); const touch = event.touches[0]; touchStartX = touch.clientX; touchStartY = touch.clientY; touchStartTime = Date.now(); touchMoved = false; }
-        function onTouchMove(event) { /* ... */ event.preventDefault(); if (event.touches.length > 0) { const touch = event.touches[0]; const deltaX = touch.clientX - touchStartX; const deltaY = touch.clientY - touchStartY; if (Math.abs(deltaX) > TAP_THRESHOLD_DIST || Math.abs(deltaY) > TAP_THRESHOLD_DIST) { touchMoved = true; } } }
-        function onTouchEnd(event) { /* ... */ event.preventDefault(); const touch = event.changedTouches[0]; const touchEndX = touch.clientX; const touchEndY = touch.clientY; const touchEndTime = Date.now(); const touchDuration = touchEndTime - touchStartTime; const deltaX = touchEndX - touchStartX; const deltaY = touchEndY - touchStartY; if (!touchMoved && touchDuration < TAP_THRESHOLD_TIME) { handleTap(touchEndX, touchEndY, event); return; } if (touchMoved) { const isHorizontalSwipe = Math.abs(deltaX) > SWIPE_THRESHOLD_X && Math.abs(deltaY) < SWIPE_THRESHOLD_Y * 1.5; const isVerticalSwipe = Math.abs(deltaY) > SWIPE_THRESHOLD_Y && Math.abs(deltaX) < SWIPE_THRESHOLD_X * 1.5; const isTopHalf = touchStartY < window.innerHeight * 0.55; if (isTopHalf) { if (isHorizontalSwipe) { const swipeDirection = deltaX > 0 ? -1 : 1; console.log("-> Rotating Palette"); rotatePalette(swipeDirection); } } else { if (isHorizontalSwipe) { const swipeDirection = deltaX > 0 ? 1 : -1; console.log("-> Rotating Board"); rotateBoard(swipeDirection * BOARD_ROTATION_STEP); } else if (isVerticalSwipe) { const swipeDirection = deltaY > 0 ? -1 : 1; console.log("-> Tilting Board"); tiltBoard(swipeDirection * (Math.PI / 12)); } } } touchStartX = 0; touchStartY = 0; touchStartTime = 0; touchMoved = false; }
-        // --- Handle Tap Event (same) ---
-        function handleTap(screenX, screenY, event) { /* ... Same tap handling logic ... */ if (event && event.target && event.target.id === 'submit-button') { return; } if (gameState !== 'playing') return; touchPos.x = (screenX / window.innerWidth) * 2 - 1; touchPos.y = -(screenY / window.innerHeight) * 2 + 1; const placedOrbBubbles = []; if (placedOrbs[currentAttempt]) { placedOrbs[currentAttempt].forEach(orbGroup => { if (orbGroup && orbGroup.children[0]) { placedOrbBubbles.push(orbGroup.children[0]); } }); } if (placedOrbBubbles.length > 0) { raycaster.setFromCamera(touchPos, camera); const intersectsPlacedOrbs = raycaster.intersectObjects(placedOrbBubbles); if (intersectsPlacedOrbs.length > 0) { const orbGroupToRemove = intersectsPlacedOrbs[0].object.userData.parentGroup; if (orbGroupToRemove) { handleRemoveOrb(orbGroupToRemove); return; } } } if (confirmedSelectedOrb !== null && guessSlotsData[currentAttempt]) { const currentSlotTargets = guessSlotsData[currentAttempt].map(s => s.targetMesh); if (currentSlotTargets.length > 0) { raycaster.setFromCamera(touchPos, camera); const intersectsSlots = raycaster.intersectObjects(currentSlotTargets); if (intersectsSlots.length > 0) { const intersectedTarget = intersectsSlots[0].object; const slotUserData = intersectedTarget.userData; if (slotUserData.row === currentAttempt && slotUserData.type === 'slot' && !slotUserData.occupied) { const slotData = guessSlotsData[currentAttempt].find(s => s.targetMesh === intersectedTarget); if (slotData) { handleSlotPlacement(slotUserData.row, slotUserData.physicalIndex, slotData.mesh); return; } } } } } if (highlightedPaletteOrb) { raycaster.setFromCamera(touchPos, camera); const intersectsHighlighted = raycaster.intersectObject(highlightedPaletteOrb.children[0]); if (intersectsHighlighted.length > 0) { confirmPaletteSelection(); return; } } deselectPaletteOrb(); }
-        // --- Palette Rotation Logic (same) ---
-        function rotatePalette(indexIncrement) { /* ... */ targetPaletteIndex = (targetPaletteIndex + indexIncrement + DISPLAY_PALETTES.length) % DISPLAY_PALETTES.length; const anglePerOrb = (Math.PI * 2) / DISPLAY_PALETTES.length; targetPaletteRotation = -targetPaletteIndex * anglePerOrb; console.log(`Targeting palette index: ${targetPaletteIndex}`); }
-        // --- Confirm Palette Selection (same) ---
-        function confirmPaletteSelection() { /* ... */ if (!highlightedPaletteOrb) { showMessage("Swipe palette to bring a color to the front first.", 2000); return; } deselectPaletteOrb(false); confirmedSelectedOrb = highlightedPaletteOrb; selectedPaletteIndex = highlightedPaletteOrb.userData.index; confirmedSelectedOrb.scale.set(SELECTION_SCALE, SELECTION_SCALE, SELECTION_SCALE); console.log(`Confirmed selection: ${DISPLAY_PALETTES[selectedPaletteIndex].name}`); showMessage(`Selected: ${DISPLAY_PALETTES[selectedPaletteIndex].name}. Tap slot to place, tap placed orb to remove.`); }
-        // --- Deselect Palette Orb (same) ---
-        function deselectPaletteOrb(showMessageFlag = true) { /* ... */ if (confirmedSelectedOrb) { const scale = (confirmedSelectedOrb === highlightedPaletteOrb) ? HIGHLIGHT_SCALE : 1; confirmedSelectedOrb.scale.set(scale, scale, scale); confirmedSelectedOrb = null; selectedPaletteIndex = null; if (showMessageFlag) showMessage("Color deselected.", 1500); } }
-        // --- Board Rotation Logic (same) ---
-        function rotateBoard(angleIncrement) { /* ... */ if (!currentGuessRowGroup || gameState !== 'playing') return; targetBoardRotation += angleIncrement; console.log(`Targeting board rotation: ${Math.round(targetBoardRotation * 180 / Math.PI)} deg`); }
-        // --- Board Tilt Logic (same) ---
-        function tiltBoard(angleIncrement) { /* ... */ if (!currentGuessRowGroup || gameState !== 'playing') return; targetBoardTilt = THREE.MathUtils.clamp( targetBoardTilt + angleIncrement, MIN_BOARD_TILT, MAX_BOARD_TILT ); console.log(`Targeting board tilt: ${Math.round(targetBoardTilt * 180 / Math.PI)} deg`); }
-        // --- Handle Slot Placement (same) ---
-        function handleSlotPlacement(rowIndex, physicalSlotIndex, slotMesh) { /* ... */ if (gameState !== 'playing' || rowIndex !== currentAttempt) return; if (selectedPaletteIndex === null || confirmedSelectedOrb === null) return; const slotData = guessSlotsData[rowIndex].find(s => s.mesh === slotMesh); if (!slotData || slotData.occupied) { console.warn("Attempted to place orb in invalid or occupied slot."); return; } const numRotations = Math.round(currentBoardRotation / BOARD_ROTATION_STEP); const logicalSlotIndex = (((physicalSlotIndex - numRotations) % 6) + 6) % 6; if (placedOrbs[rowIndex][logicalSlotIndex] !== null) { showMessage("Slot conflict detected.", 1500); return; } const palette = DISPLAY_PALETTES[selectedPaletteIndex]; const newOrbGroup = createOrbGroup(palette); newOrbGroup.userData.paletteIndex = selectedPaletteIndex; newOrbGroup.position.copy(slotMesh.position); newOrbGroup.position.y += ORB_RADIUS_OUTER * 0.3; currentGuessRowGroup.add(newOrbGroup); if (!placedOrbs[rowIndex]) placedOrbs[rowIndex] = new Array(6).fill(null); placedOrbs[rowIndex][logicalSlotIndex] = newOrbGroup; slotData.occupied = true; slotMesh.userData.occupied = true; slotData.targetMesh.userData.occupied = true; slotMesh.material = slotMaterial; console.log(`Placed orb ${palette.name} (Index: ${selectedPaletteIndex}) in logical slot ${logicalSlotIndex}`); updateSubmitButtonState(); }
-        // --- Handle Orb Removal (same) ---
-        function handleRemoveOrb(orbGroupToRemove) { /* ... */ if (gameState !== 'playing' || !orbGroupToRemove) return; let logicalIndex = -1; if (placedOrbs[currentAttempt]) { logicalIndex = placedOrbs[currentAttempt].indexOf(orbGroupToRemove); } if (logicalIndex === -1) { console.error("Could not find orb to remove in current attempt row."); return; } console.log(`Removing orb from logical slot ${logicalIndex}`); const numRotations = Math.round(currentBoardRotation / BOARD_ROTATION_STEP); const physicalIndex = (logicalIndex + numRotations) % 6; const slotData = guessSlotsData[currentAttempt].find(s => s.index === physicalIndex); if (slotData) { slotData.occupied = false; if(slotData.mesh) slotData.mesh.userData.occupied = false; if(slotData.targetMesh) slotData.targetMesh.userData.occupied = false; if(slotData.mesh) slotData.mesh.material = slotMaterial; } else { console.error(`Could not find slot data for physical index ${physicalIndex}`); } currentGuessRowGroup.remove(orbGroupToRemove); placedOrbs[currentAttempt][logicalIndex] = null; orbGroupToRemove.traverse(child => { if (child.isMesh) { child.geometry.dispose(); if (child.material.isMaterial) { child.material.dispose(); } else { for (const material of child.material) material.dispose(); } } }); showMessage("Orb removed.", 1500); updateSubmitButtonState(); }
-        // --- Update Submit Button State (same) ---
-        function updateSubmitButtonState() { /* ... */ const submitButton = document.getElementById('submit-button'); if (!submitButton) return; if (gameState !== 'playing') { submitButton.style.display = 'none'; return; } const currentPlaced = placedOrbs[currentAttempt]; const filledStatus = currentPlaced ? currentPlaced.map(o => !!o) : []; console.log(`Checking submit state: Attempt ${currentAttempt}, Status: [${filledStatus.join(', ')}]`); const isRowFull = currentPlaced && currentPlaced.length === 6 && currentPlaced.every(orb => orb !== null); console.log(`Is row full? ${isRowFull}`); submitButton.style.display = isRowFull ? 'block' : 'none'; submitButton.disabled = !isRowFull; }
-        // --- Handle Guess Submission (same) ---
-        function handleSubmit() { /* ... */ if (gameState !== 'playing' || currentAttempt >= MAX_ATTEMPTS) return; const guess = []; const currentPlacedOrbs = placedOrbs[currentAttempt]; let isValidGuess = true; if (!currentPlacedOrbs || currentPlacedOrbs.length !== 6) isValidGuess = false; else { for (let i = 0; i < 6; i++) { const orbGroup = currentPlacedOrbs[i]; if (!orbGroup || orbGroup.userData.paletteIndex === undefined) { isValidGuess = false; break; } guess.push(orbGroup.userData.paletteIndex); } } if (!isValidGuess) { showMessage("Error: Guess is incomplete.", 2000); console.error("Attempted to submit incomplete guess:", currentPlacedOrbs); return; } console.log(`Submitting guess for attempt ${currentAttempt}:`, guess); disableInteraction(); const feedbackResults = checkGuess(guess); displayFeedback(currentAttempt, feedbackResults); setTimeout(() => { const isWin = feedbackResults.every(result => result === 'green'); if (isWin) { handleWin(); } else if (currentAttempt >= MAX_ATTEMPTS - 1) { handleLoss(); } else { currentAttempt++; targetContainerZ = -(currentAttempt * GUESS_ROW_Z_SPACING); console.log(`Advancing to Attempt ${currentAttempt}, Target Container Z: ${targetContainerZ.toFixed(2)}`); startNewAttempt(); enableInteraction(); showMessage(`Attempt ${currentAttempt + 1} of ${MAX_ATTEMPTS}. Make your guess.`); } }, 1000); }
-        // --- Disable/Enable Interaction (same) ---
-        function disableInteraction() { /* ... */ console.log("Interaction Disabled"); document.getElementById('submit-button').disabled = true; }
-        function enableInteraction() { /* ... */ console.log("Interaction Enabled"); document.getElementById('submit-button').disabled = false; updateSubmitButtonState(); }
-        // --- Check Guess Logic (same) ---
-        function checkGuess(guessIndices) { /* ... */ const feedback = new Array(6).fill(null); const secretCounts = {}; const secret = [...secretSequence]; for (let i = 0; i < 6; i++) { if (guessIndices[i] === secret[i]) { feedback[i] = 'green'; secret[i] = null; } else { secretCounts[secret[i]] = (secretCounts[secret[i]] || 0) + 1; } } for (let i = 0; i < 6; i++) { if (feedback[i] === null) { const guessColorIndex = guessIndices[i]; if (secretCounts[guessColorIndex] && secretCounts[guessColorIndex] > 0) { feedback[i] = 'yellow'; secretCounts[guessColorIndex]--; } else { feedback[i] = 'gray'; } } } console.log("Feedback:", feedback); return feedback; }
-        // --- Display Feedback (same) ---
-        function displayFeedback(attemptIndex, feedbackResults) { /* ... */ if (!guessSlotsData[attemptIndex]) return; const numRotations = Math.round(currentBoardRotation / BOARD_ROTATION_STEP); for (let logicalIndex = 0; logicalIndex < 6; logicalIndex++) { const feedback = feedbackResults[logicalIndex]; const color = FEEDBACK_COLORS[feedback]; const physicalIndex = (logicalIndex + numRotations) % 6; const slotData = guessSlotsData[attemptIndex].find(s => s.index === physicalIndex); if (slotData && slotData.mesh) { slotData.mesh.material.color.setHex(color); slotData.mesh.material.opacity = 0.9; if (hoveredSlot === slotData.mesh) hoveredSlot = null; } if (feedback === 'green') { const orbGroup = placedOrbs[attemptIndex][logicalIndex]; if (orbGroup && orbGroup.userData.paletteIndex !== undefined) { const paletteIndex = orbGroup.userData.paletteIndex; const glyphSymbol = GLYPH_MAP[paletteIndex]; revealGlyph(orbGroup, glyphSymbol, attemptIndex, logicalIndex); } } } }
-        // --- Reveal Glyph (same) ---
-        const glyphElements = {}; function revealGlyph(orbGroup, symbol, attemptIndex, logicalIndex) { /* ... */ const overlayContainer = document.getElementById('glyph-overlay'); const elementId = `glyph-${attemptIndex}-${logicalIndex}`; let glyphElement = document.getElementById(elementId); if (!glyphElement) { glyphElement = document.createElement('div'); glyphElement.id = elementId; glyphElement.className = 'glyph'; glyphElement.textContent = symbol; overlayContainer.appendChild(glyphElement); if (!glyphElements[attemptIndex]) glyphElements[attemptIndex] = []; glyphElements[attemptIndex][logicalIndex] = glyphElement; } glyphElement.style.display = 'block'; }
-        // --- Update Glyph Positions (same) ---
-        function updateGlyphPositions() { /* ... */ const overlayContainer = document.getElementById('glyph-overlay'); if (!camera || !placedOrbs || placedOrbs.length === 0) return; for (let attemptIdx = 0; attemptIdx <= currentAttempt; attemptIdx++) { if (!placedOrbs[attemptIdx]) continue; for (let logicalIdx = 0; logicalIdx < placedOrbs[attemptIdx].length; logicalIdx++) { const orbGroup = placedOrbs[attemptIdx][logicalIdx]; const elementId = `glyph-${attemptIdx}-${logicalIdx}`; const glyphElement = document.getElementById(elementId); if (orbGroup && glyphElement && glyphElement.style.display === 'block') { const worldPosition = new THREE.Vector3(); orbGroup.children[1].getWorldPosition(worldPosition); const screenPosition = worldPosition.clone().project(camera); const x = (screenPosition.x * 0.5 + 0.5) * window.innerWidth; const y = (-screenPosition.y * 0.5 + 0.5) * window.innerHeight; if (screenPosition.z > 1) { glyphElement.style.display = 'none'; } else { glyphElement.style.display = 'block'; glyphElement.style.left = `${x}px`; glyphElement.style.top = `${y}px`; } } else if (glyphElement && glyphElement.style.display === 'block') { glyphElement.style.display = 'none'; } } } }
-        // --- Handle Win/Loss (same) ---
-        function handleWin() { /* ... */ gameState = 'won'; showMessage(`You guessed the sequence in ${currentAttempt + 1} attempts!`, 10000); disableInteraction(); }
-        function handleLoss() { /* ... */ gameState = 'lost'; showMessage(`Out of attempts! The sequence was: [${getSequenceColorNames(secretSequence).join(', ')}]`, 10000); disableInteraction(); revealSequence(); }
-        // --- Reveal Secret Sequence (same) ---
-        function revealSequence() { /* ... */ const revealGroup = new THREE.Group(); revealGroup.position.set(0, GUESS_ROW_START_Y + 1.5, (currentAttempt + 1) * GUESS_ROW_Z_SPACING); secretSequence.forEach((paletteIndex, i) => { const palette = DISPLAY_PALETTES[paletteIndex]; const orb = createOrbGroup(palette); orb.position.x = (i - 2.5) * (ORB_RADIUS_OUTER * 2.5); revealGroup.add(orb); }); scene.add(revealGroup); }
-        // --- Helper to get color names (same) ---
-        function getSequenceColorNames(indices) { /* ... */ return indices.map(index => DISPLAY_PALETTES[index] ? DISPLAY_PALETTES[index].name : 'Unknown'); }
-        // --- Show Message Helper (same) ---
-        let messageTimeout; function showMessage(text, duration = 3000) { /* ... */ const messageElement=document.getElementById('message');messageElement.textContent=text;messageElement.style.display='block';clearTimeout(messageTimeout);if(duration>0){messageTimeout=setTimeout(()=>{messageElement.style.display='none';},duration);} }
-        // --- Mouse Move Handler (same) ---
-        let hoveredSlot = null; function onMouseMove(event) { /* ... */ if (gameState !== 'playing') { if (hoveredSlot) { hoveredSlot.material = slotMaterial; hoveredSlot = null; } return; } if (confirmedSelectedOrb === null) return; touchPos.x = (event.clientX / window.innerWidth) * 2 - 1; touchPos.y = -(event.clientY / window.innerHeight) * 2 + 1; raycaster.setFromCamera(touchPos, camera); const currentSlotTargets = guessSlotsData[currentAttempt]?.map(s => s.targetMesh) || []; if (hoveredSlot && hoveredSlot.material !== slotMaterial) { hoveredSlot.material = slotMaterial; hoveredSlot = null; } if (currentSlotTargets.length > 0) { const intersectsSlots = raycaster.intersectObjects(currentSlotTargets); if (intersectsSlots.length > 0) { const intersectedTarget = intersectsSlots[0].object; const slotUserData = intersectedTarget.userData; if (slotUserData.row === currentAttempt && slotUserData.type === 'slot' && !slotUserData.occupied) { const slotData = guessSlotsData[currentAttempt].find(s => s.targetMesh === intersectedTarget); if (slotData && slotData.mesh) { slotData.mesh.material = slotHoverMaterial; hoveredSlot = slotData.mesh; } } } } }
-        // --- Handle Window Resize (same) ---
-        function onWindowResize() { /* ... */ const width=window.innerWidth;const height=window.innerHeight;camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setSize(width,height);composer.setSize(width,height); }
+                    // Camera/Controls setup (as before)
+                    camera.position.set(0, 1.5, 9);
+                    camera.lookAt(0, 1, 0);
+                    controls.target.set(0, 1, 0);
+                    controls.enableRotate = false;
+                    controls.enablePan = false;
+                    controls.enableZoom = false;
+                    controls.reset();
+                    break;
 
-        // --- Animation Loop (Added History Row Scaling) ---
-        function animate() {
-            requestAnimationFrame(animate);
-            const delta = clock.getDelta();
-            controls.update(delta);
+                case 'ComingSoon':
+                    comingSoonElement.style.display = 'flex'; // Show using display
+                    // Trigger fade-in (optional)
+                     requestAnimationFrame(() => {
+                         comingSoonElement.style.opacity = '1';
+                     });
+                    // Container needs pointer events for its button
+                    comingSoonElement.style.pointerEvents = 'auto';
+                    if (bottomOrbsGroup) bottomOrbsGroup.visible = true;
+                    // Canvas NOT interactive
+                    if (canvas) canvas.style.pointerEvents = 'none';
 
-            // Smooth Container Movement
-            const containerMoveDiff = targetContainerZ - currentContainerZ;
-            if (Math.abs(containerMoveDiff) > 0.01) {
-                currentContainerZ += containerMoveDiff * delta * CONTAINER_MOVE_SPEED;
-                guessRowsContainer.position.z = currentContainerZ;
-            } else if (currentContainerZ !== targetContainerZ) {
-                currentContainerZ = targetContainerZ;
-                guessRowsContainer.position.z = currentContainerZ;
-            }
+                    // Camera/Controls setup (as before)
+                    camera.position.set(0, 1.5, 9);
+                    camera.lookAt(0, 1, 0);
+                    controls.target.set(0, 1, 0);
+                    controls.enableRotate = false;
+                    controls.enablePan = false;
+                    controls.enableZoom = false;
+                    controls.reset();
+                    break;
 
-            // Smooth Palette Rotation
-            /* ... palette rotation lerp ... */ let rotationDiff = targetPaletteRotation - currentPaletteRotation; let shortestDiff = Math.atan2(Math.sin(rotationDiff), Math.cos(rotationDiff)); let rotationStep = shortestDiff * delta * PALETTE_ROTATION_SPEED; if (Math.abs(shortestDiff) > 0.005) { currentPaletteRotation += rotationStep; paletteGroup.rotation.y = currentPaletteRotation; } else if (currentPaletteRotation !== targetPaletteRotation) { currentPaletteRotation = targetPaletteRotation; paletteGroup.rotation.y = currentPaletteRotation; }
+                case 'Game':
+                    // Ensure menus are hidden (done by initial part of function)
+                    // Canvas MUST receive clicks for the game
+                    if (canvas) canvas.style.pointerEvents = 'auto';
 
-            // Smooth Board Rotation/Tilt (Applies to current row group)
-            if (currentGuessRowGroup) {
-                 /* ... board rotation/tilt lerp ... */ rotationDiff = targetBoardRotation - currentBoardRotation; shortestDiff = Math.atan2(Math.sin(rotationDiff), Math.cos(rotationDiff)); rotationStep = shortestDiff * delta * BOARD_ROTATION_SPEED; if (Math.abs(shortestDiff) > 0.005) { currentBoardRotation += rotationStep; currentGuessRowGroup.rotation.y = currentBoardRotation; } else if (currentBoardRotation !== targetBoardRotation) { currentBoardRotation = targetBoardRotation; currentGuessRowGroup.rotation.y = currentBoardRotation; } const tiltDiff = targetBoardTilt - currentBoardTilt; const tiltStep = tiltDiff * delta * BOARD_TILT_SPEED; if (Math.abs(tiltDiff) > 0.005) { currentBoardTilt += tiltStep; currentGuessRowGroup.rotation.x = currentBoardTilt; } else if (currentBoardTilt !== targetBoardTilt) { currentBoardTilt = targetBoardTilt; currentGuessRowGroup.rotation.x = currentBoardTilt; }
-            }
-
-            // Update Palette Highlighting & Bobbing
-            /* ... palette highlight/bobbing ... */ const anglePerOrb = (Math.PI * 2) / DISPLAY_PALETTES.length; const currentFrontIndexRaw = -currentPaletteRotation / anglePerOrb; const currentFrontIndex = Math.round(currentFrontIndexRaw) % DISPLAY_PALETTES.length; const closestIndex = (currentFrontIndex + DISPLAY_PALETTES.length) % DISPLAY_PALETTES.length; let newHighlightedOrb = paletteOrbsData[closestIndex]?.group || null; if (highlightedPaletteOrb && highlightedPaletteOrb !== newHighlightedOrb && highlightedPaletteOrb !== confirmedSelectedOrb) { highlightedPaletteOrb.scale.set(1, 1, 1); } if (newHighlightedOrb && newHighlightedOrb !== highlightedPaletteOrb) { if (newHighlightedOrb !== confirmedSelectedOrb) { newHighlightedOrb.scale.set(HIGHLIGHT_SCALE, HIGHLIGHT_SCALE, HIGHLIGHT_SCALE); } highlightedPaletteOrb = newHighlightedOrb; } else if (!newHighlightedOrb) { highlightedPaletteOrb = null; } paletteOrbsData.forEach(data => { const orbGroup = data.group; const bobble = Math.sin(clock.getElapsedTime() * 1.0 + data.index) * 0.05; orbGroup.position.y = bobble; if (orbGroup === confirmedSelectedOrb) { orbGroup.scale.set(SELECTION_SCALE, SELECTION_SCALE, SELECTION_SCALE); } else if (orbGroup === highlightedPaletteOrb) { orbGroup.scale.set(HIGHLIGHT_SCALE, HIGHLIGHT_SCALE, HIGHLIGHT_SCALE); } else { orbGroup.scale.set(1, 1, 1); } });
-
-            // *** Scale down previous rows ***
-            guessRowsContainer.children.forEach(group => {
-                if (group.isGroup && group.userData.attemptIndex !== undefined) {
-                    const age = currentAttempt - group.userData.attemptIndex;
-                    if (age > 0) { // Don't scale current row
-                        const targetScale = Math.max(0.1, 1.0 / (1.0 + age * HISTORY_ROW_SCALE_FACTOR)); // Gradual shrink, minimum scale 0.1
-                        // Smooth scaling
-                        group.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), delta * 5.0);
+                    // Show game UI elements
+                    gameInfoDiv.style.display = 'block';
+                    gameMessageDiv.style.display = 'block';
+                    gameGlyphOverlay.style.display = 'block';
+                    backButton.style.display = 'block';
+                    if (gameMode === 'Astral Trials') {
+                        newSequenceButton.style.display = 'block';
                     } else {
-                         // Ensure current row is scale 1 (or lerp back if needed)
-                         group.scale.lerp(new THREE.Vector3(1, 1, 1), delta * 5.0);
+                        newSequenceButton.style.display = 'none'; // Ensure it's hidden if not Astral
                     }
+                    // Show 3D game elements
+                    if (paletteGroup) paletteGroup.visible = true;
+                    if (guessRowsContainer) guessRowsContainer.visible = true;
+                    if (revealGroup && revealGroup.visible) revealGroup.visible = true; // Check if reveal exists and should be visible
+                    updateSubmitButtonState(); // Shows submit button if needed
+
+                    // Configure controls for game (allow zoom)
+                    controls.enableRotate = false;
+                    controls.enablePan = false;
+                    controls.enableZoom = true;
+                    controls.minDistance = 2;
+                    controls.maxDistance = 55;
+                    camera.position.set(0, 4, 9);
+                    camera.lookAt(0, 1, 0);
+                    controls.target.set(0, 0.9, 0);
+                    controls.reset();
+                    break;
+
+                 case 'Loading':
+                     // Handled by initial state - menus are display: none, canvas pointer-events: none
+                     if (canvas) canvas.style.pointerEvents = 'none';
+                     break;
+            }
+            if(controls) controls.update();
+        }
+
+
+        // --- Modified startGame (Keep as is, relies on showView) ---
+        function startGame(selectedMode) {
+             if (!gameInitialized) {
+                 console.log(`Initializing game for the first time. Mode: ${selectedMode}`);
+                 gameMode = selectedMode;
+                 gameState = 'playing'; currentAttempt = 0;
+
+                 if (!guessRowsContainer) {
+                     guessRowsContainer = new THREE.Group();
+                     scene.add(guessRowsContainer);
+                 }
+                 if (!paletteGroup) {
+                      paletteGroup = new THREE.Group();
+                      paletteGroup.position.y = PALETTE_Y_POS;
+                      scene.add(paletteGroup);
+                 }
+
+                 if (!environmentMap) {
+                      console.warn("Starting game but environment map not loaded yet. Loading now...");
+                      setupEnvironmentMap(() => {
+                         generateSecretSequence(gameMode);
+                         createPaletteOrbs();
+                         startNewAttempt();
+                         showMessage(`Mode: ${gameMode}. Make your first guess!`);
+                         updateSubmitButtonState();
+                         gameInitialized = true;
+                         showView('Game');
+                      });
+                 } else {
+                     generateSecretSequence(gameMode);
+                     if(paletteOrbsData.length === 0) createPaletteOrbs();
+                     startNewAttempt();
+                     showMessage(`Mode: ${gameMode}. Make your first guess!`);
+                     updateSubmitButtonState();
+                     gameInitialized = true;
+                     showView('Game');
+                 }
+
+             } else {
+                 console.log(`Starting game (already initialized). Mode: ${selectedMode}`);
+                 resetGameForMode(selectedMode);
+                 showView('Game');
+             }
+         }
+
+
+        // --- resetGameForMode (Keep as is) ---
+        function resetGameForMode(newMode) {
+             console.log(`Resetting game state for mode: ${newMode}`);
+             gameMode = newMode;
+             gameState = 'playing';
+             currentAttempt = 0;
+
+             // Clean up previous game state
+             const overlayContainer = document.getElementById('glyph-overlay');
+             if (overlayContainer) overlayContainer.innerHTML = '';
+             glyphElements = {};
+
+              if (guessRowsContainer) {
+                  while (guessRowsContainer.children.length > 0) {
+                     const child = guessRowsContainer.children[0];
+                      if (child.isGroup || child.isMesh) {
+                         child.traverse(obj => {
+                            if (obj.isMesh || obj.isPoints) {
+                                 obj.geometry?.dispose();
+                                 if (obj.material) { if (Array.isArray(obj.material)) { obj.material.forEach(mat => mat.dispose()); } else { obj.material.dispose(); } } }
+                               // <<< MODIFIED: Check userData for particle system disposal >>>
+                               if(obj.isGroup && obj.userData?.particleSystem?.isPoints) {
+                                    if(obj.userData.particleSystem.geometry) obj.userData.particleSystem.geometry.dispose();
+                                    if(obj.userData.particleSystem.material) obj.userData.particleSystem.material.dispose();
+                                    obj.userData.particleSystem = null; // Clear reference
+                               }
+                         }); }
+                     guessRowsContainer.remove(child); }}
+              if (revealGroup) {
+                 revealGroup.traverse(obj => {
+                    if (obj.isMesh || obj.isPoints){
+                        obj.geometry?.dispose();
+                        if (obj.material) { if (Array.isArray(obj.material)) obj.material.forEach(mat => mat.dispose()); else obj.material.dispose(); }
+                    }
+                    // <<< MODIFIED: Check userData for particle system disposal >>>
+                    if(obj.isGroup && obj.userData?.particleSystem?.isPoints) {
+                        if(obj.userData.particleSystem.geometry) obj.userData.particleSystem.geometry.dispose();
+                        if(obj.userData.particleSystem.material) obj.userData.particleSystem.material.dispose();
+                        obj.userData.particleSystem = null; // Clear reference
+                    }
+                });
+                 if(revealGroup.parent) revealGroup.parent.remove(revealGroup); revealGroup = null; }
+
+             selectedPaletteIndex = null; confirmedSelectedOrb = null; highlightedPaletteOrb = null;
+             targetBoardRotation = 0; currentBoardRotation = 0; targetBoardTilt = 0; currentBoardTilt = 0;
+             if (guessRowsContainer) guessRowsContainer.position.set(0, 0, 0); currentContainerZ = 0; targetContainerZ = 0;
+
+             guessSlotsData = []; placedOrbs = [];
+
+             if (paletteOrbsData.length > 0) { paletteOrbsData.forEach(p => p.group.scale.set(1, 1, 1)); targetPaletteRotation = 0; currentPaletteRotation = 0; targetPaletteIndex = 0; if(paletteGroup) paletteGroup.rotation.y = 0; deselectPaletteOrb(false); }
+             else { if (environmentMap) createPaletteOrbs(); } // Recreate if missing and env map exists
+
+             generateSecretSequence(gameMode);
+             startNewAttempt();
+             showMessage(`Mode: ${gameMode}. Make your first guess!`);
+             updateSubmitButtonState();
+             enableInteraction();
+         }
+
+
+        // --- showInfoPopup/hideInfoPopup (Keep as is) ---
+        function showInfoPopup() { infoPopup.style.display = 'flex'; }
+        function hideInfoPopup() { infoPopup.style.display = 'none'; }
+
+        // --- MODIFIED Event Listeners Setup (Verify Back Button Logic) ---
+        function setupMenuInteractions() {
+            console.log("Setting up menu interactions...");
+
+            const dailyButton = document.getElementById('daily-button-html');
+            const astralButton = document.getElementById('astral-button-html');
+            const archiveButton = document.getElementById('archive-button-html');
+            const infoIcon = document.getElementById('menu-info-icon');
+            const comingSoonBackButton = document.getElementById('coming-soon-back-button');
+
+            // --- MODIFIED LISTENERS ---
+            if (dailyButton) dailyButton.addEventListener('click', () => {
+                if (currentView !== 'MainMenu') return; // <<< ADD VIEW CHECK
+                startGame('Daily Glyphs');
+            });
+            if (astralButton) astralButton.addEventListener('click', () => {
+                if (currentView !== 'MainMenu') return; // <<< ADD VIEW CHECK
+                startGame('Astral Trials');
+            });
+            if (archiveButton) archiveButton.addEventListener('click', () => {
+                if (currentView !== 'MainMenu') return; // <<< ADD VIEW CHECK
+                showView('ComingSoon');
+            });
+            // --- END MODIFIED LISTENERS ---
+
+            if (infoIcon) infoIcon.addEventListener('click', (event) => {
+                event.preventDefault(); // Keep preventDefault for the link
+                // No view check needed here, icon is always visible with menu (or should be)
+                showInfoPopup();
+            });
+            if (comingSoonBackButton) comingSoonBackButton.addEventListener('click', () => {
+                // No view check needed, button only visible in 'ComingSoon' view
+                showView('MainMenu');
+            });
+
+            closeInfoButton.addEventListener('click', hideInfoPopup);
+
+            // --- Back Button Listener (Cleanup and View Change) ---
+            backButton.addEventListener('click', () => {
+                console.log("Game Back button clicked. Returning to Main Menu.");
+                // 1. Clean up 3D game objects
+                 if (guessRowsContainer) {
+                     while (guessRowsContainer.children.length > 0) {
+                        const child = guessRowsContainer.children[0];
+                         if (child.isGroup || child.isMesh) {
+                            child.traverse(obj => {
+                               if (obj.isMesh || obj.isPoints) {
+                                    obj.geometry?.dispose();
+                                    if (obj.material) { if (Array.isArray(obj.material)) { obj.material.forEach(mat => mat.dispose()); } else { obj.material.dispose(); } } }
+                                  // <<< MODIFIED: Check userData for particle system disposal >>>
+                                  if(obj.isGroup && obj.userData?.particleSystem?.isPoints) {
+                                       if(obj.userData.particleSystem.geometry) obj.userData.particleSystem.geometry.dispose();
+                                       if(obj.userData.particleSystem.material) obj.userData.particleSystem.material.dispose();
+                                       obj.userData.particleSystem = null; // Clear reference
+                                  }
+                            }); }
+                        guessRowsContainer.remove(child);
+                    }
+                    if(guessRowsContainer.parent) guessRowsContainer.parent.remove(guessRowsContainer);
+                 }
+                 if (paletteGroup) {
+                      while (paletteGroup.children.length > 0) {
+                          const child = paletteGroup.children[0];
+                          child.traverse(obj => {
+                              if (obj.isMesh || obj.isPoints) {
+                                  obj.geometry?.dispose();
+                                  if (obj.material) { if (Array.isArray(obj.material)) obj.material.forEach(mat => mat.dispose()); else obj.material.dispose(); }
+                                }
+                               // <<< MODIFIED: Check userData for particle system disposal >>>
+                                if(obj.isGroup && obj.userData?.particleSystem?.isPoints) {
+                                    if(obj.userData.particleSystem.geometry) obj.userData.particleSystem.geometry.dispose();
+                                    if(obj.userData.particleSystem.material) obj.userData.particleSystem.material.dispose();
+                                    obj.userData.particleSystem = null; // Clear reference
+                                }
+                            });
+                          paletteGroup.remove(child);
+                      }
+                      if(paletteGroup.parent) paletteGroup.parent.remove(paletteGroup);
+                 }
+                 if (revealGroup) { // Ensure reveal group is also cleaned up
+                    revealGroup.traverse(obj => {
+                        if (obj.isMesh || obj.isPoints){
+                            obj.geometry?.dispose();
+                            if (obj.material) { if (Array.isArray(obj.material)) obj.material.forEach(mat => mat.dispose()); else obj.material.dispose(); }
+                        }
+                        // <<< MODIFIED: Check userData for particle system disposal >>>
+                        if(obj.isGroup && obj.userData?.particleSystem?.isPoints) {
+                            if(obj.userData.particleSystem.geometry) obj.userData.particleSystem.geometry.dispose();
+                            if(obj.userData.particleSystem.material) obj.userData.particleSystem.material.dispose();
+                            obj.userData.particleSystem = null; // Clear reference
+                        }
+                    });
+                    if(revealGroup.parent) revealGroup.parent.remove(revealGroup);
+                    revealGroup = null;
+                 }
+                 // Reset group references
+                 guessRowsContainer = null;
+                 paletteGroup = null;
+                 currentGuessRowGroup = null;
+
+                 // 2. Reset Game State Variables
+                 gameInitialized = false; // Mark as not initialized for next game start
+                 paletteOrbsData = [];
+                 guessSlotsData = [];
+                 placedOrbs = [];
+                 secretSequence = [];
+                 currentAttempt = 0;
+                 gameState = 'playing';
+                 selectedPaletteIndex = null;
+                 highlightedPaletteOrb = null;
+                 confirmedSelectedOrb = null;
+                 targetPaletteRotation = 0; currentPaletteRotation = 0; targetPaletteIndex = 0;
+                 targetBoardRotation = 0; currentBoardRotation = 0;
+                 targetBoardTilt = 0; currentBoardTilt = 0;
+                 targetContainerZ = 0; currentContainerZ = 0;
+
+                 // 3. Clear HTML Glyphs
+                 const overlayContainer = document.getElementById('glyph-overlay');
+                 if (overlayContainer) overlayContainer.innerHTML = '';
+                 glyphElements = {};
+
+                 // 4. Switch View
+                 showView('MainMenu');
+            });
+
+            // --- New Sequence Button Listener (Verify it calls resetBoardForNewSequence) ---
+            newSequenceButton.addEventListener('click', () => {
+                if (gameMode === 'Astral Trials' && currentView === 'Game') {
+                    console.log("New Sequence requested (Astral Trials).");
+                    resetBoardForNewSequence(); // Confirmed: Calls the correct function
                 }
             });
 
-            // Update HTML Glyph Positions
-            updateGlyphPositions();
+             // Submit Listeners (Keep as is)
+             const submitHandlerTouch = (event) => { if(currentView === 'Game') { event.stopPropagation(); event.preventDefault(); handleSubmit(); } };
+             const submitHandlerClick = (event) => { if(currentView === 'Game') { handleSubmit(); } };
+             gameSubmitButton.removeEventListener('touchstart', submitHandlerTouch);
+             gameSubmitButton.removeEventListener('click', submitHandlerClick);
+             gameSubmitButton.addEventListener('touchstart', submitHandlerTouch , { passive: false });
+             gameSubmitButton.addEventListener('click', submitHandlerClick);
 
-            // Render
-            if (composer) { composer.render(delta); } else { renderer.render(scene, camera); }
+            console.log("Menu interactions setup complete.");
+        }
+
+        // --- resetBoardForNewSequence (Keep as is - Verified to be called correctly) ---
+        function resetBoardForNewSequence() {
+            console.log(">>> resetBoardForNewSequence function STARTED (Forceful Cleanup Version) <<<");
+            if (gameMode !== 'Astral Trials') { console.log("Reset aborted: Not in Astral Trials mode."); return; }
+            console.log("Resetting board state for New Sequence...");
+            disableInteraction(); // Disable game interactions
+
+             // 1. Clear Glyphs
+            const overlayContainer = document.getElementById('glyph-overlay');
+            if (overlayContainer) { overlayContainer.innerHTML = ''; glyphElements = {}; }
+
+             // 2. Forceful Cleanup of 3D Objects in guessRowsContainer
+             if (scene && guessRowsContainer) {
+                 console.log(`Starting cleanup of guessRowsContainer.`);
+                 while (guessRowsContainer.children.length > 0){
+                    const child = guessRowsContainer.children[0];
+                    child.traverse(obj => {
+                        if (obj.isMesh || obj.isPoints) {
+                             obj.geometry?.dispose();
+                             if (obj.material) { if (Array.isArray(obj.material)) obj.material.forEach(mat => mat.dispose()); else obj.material.dispose(); }
+                        }
+                         // <<< MODIFIED: Check userData for particle system disposal >>>
+                         if(obj.isGroup && obj.userData?.particleSystem?.isPoints) {
+                            if(obj.userData.particleSystem.geometry) obj.userData.particleSystem.geometry.dispose();
+                            if(obj.userData.particleSystem.material) obj.userData.particleSystem.material.dispose();
+                            obj.userData.particleSystem = null; // Clear reference
+                         }
+                    });
+                    guessRowsContainer.remove(child);
+                 }
+                  if(revealGroup){ // Cleanup reveal group separately if it exists
+                    revealGroup.traverse(obj => {
+                        if (obj.isMesh || obj.isPoints){
+                            obj.geometry?.dispose();
+                            if (obj.material) { if (Array.isArray(obj.material)) obj.material.forEach(mat => mat.dispose()); else obj.material.dispose(); }
+                        }
+                        // <<< MODIFIED: Check userData for particle system disposal >>>
+                         if(obj.isGroup && obj.userData?.particleSystem?.isPoints) {
+                            if(obj.userData.particleSystem.geometry) obj.userData.particleSystem.geometry.dispose();
+                            if(obj.userData.particleSystem.material) obj.userData.particleSystem.material.dispose();
+                            obj.userData.particleSystem = null; // Clear reference
+                         }
+                    });
+                    if(revealGroup.parent) revealGroup.parent.remove(revealGroup);
+                    revealGroup = null;
+                }
+                 console.log(`Cleared guessRowsContainer children.`);
+             } else { console.warn("Scene or guessRowsContainer not found for cleanup."); }
+
+
+             // 3. Nullify references
+             currentGuessRowGroup = null; // Will be recreated by startNewAttempt
+
+             // 4. Reset Game State Variables
+             currentAttempt = 0; gameState = 'playing'; selectedPaletteIndex = null; confirmedSelectedOrb = null; highlightedPaletteOrb = null; targetBoardRotation = 0; currentBoardRotation = 0; targetBoardTilt = 0; currentBoardTilt = 0; if (guessRowsContainer) guessRowsContainer.position.set(0, 0, 0); currentContainerZ = 0; targetContainerZ = 0;
+
+             // 5. Clear Old Data Arrays
+             guessSlotsData = []; placedOrbs = [];
+
+             // 6. Generate new secret sequence
+             generateSecretSequence('Astral Trials');
+
+             // 7. Start the first attempt
+             startNewAttempt(); // This rebuilds the first row
+
+             // 8. Reset Palette visuals
+             deselectPaletteOrb(false);
+
+             // 9. Update UI Text & Button States
+             showMessage("New Astral Trial sequence generated! Good luck."); updateSubmitButtonState(); enableInteraction(); // Re-enable game interactions
+             console.log(">>> Board reset function FINISHED. <<<");
+        }
+
+
+        // --- Initialization (Modified to start in MainMenu after setup) ---
+        function init() {
+            currentView = 'Loading'; // Start in loading state
+            scene = new THREE.Scene(); scene.background = new THREE.Color(BACKGROUND_COLOR); scene.fog = new THREE.FogExp2(BACKGROUND_COLOR, FOG_DENSITY);
+            const aspect = window.innerWidth / window.innerHeight; camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
+            camera.position.set(0, 1.5, 9);
+            camera.lookAt(new THREE.Vector3(0, 1, 0));
+
+            renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(window.devicePixelRatio); renderer.physicallyCorrectLights = true; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.9; renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; document.body.appendChild(renderer.domElement);
+            renderer.domElement.style.display = 'block';
+
+            // Setup essentials
+            setupControls();
+            setupLighting();
+            setupPostProcessing();
+
+            // --- Create 3D Background Elements & Setup Interactions ---
+            setupEnvironmentMap(() => {
+                 createBottomOrbs();
+
+                 // Setup interactions
+                 setupMenuInteractions(); // Setup HTML button clicks FIRST
+                 setupInteraction();    // Then setup Canvas interactions
+
+                 // Start animation loop
+                 animate();
+
+                 // Show the main menu as the initial view AFTER everything is ready
+                 showView('MainMenu');
+                 console.log("Initial setup complete, showing Main Menu.");
+            });
+
+
+            window.addEventListener('resize', onWindowResize, false);
+        }
+
+        // --- Create just the 3D Bottom Orbs (Keep as is) ---
+        function createBottomOrbs() {
+            if (bottomOrbsGroup) scene.remove(bottomOrbsGroup);
+            if (!environmentMap) { console.warn("Environment map not ready for bottom orbs reflections."); }
+
+            bottomOrbsGroup = new THREE.Group();
+            bottomOrbsGroup.position.y = -3.8;
+            const orbSpacing = 1.8; const orbScale = 0.7;
+
+            const createOrbSet = (xOffset, colorsIndices) => {
+                 const setGroup = new THREE.Group(); setGroup.position.x = xOffset;
+                 colorsIndices.forEach((paletteIndex, i) => {
+                     const orb = createOrbGroup(DISPLAY_PALETTES[paletteIndex]); orb.scale.setScalar(orbScale); orb.position.x = (i - (colorsIndices.length - 1) / 2) * orbScale * 1.2; orb.position.z = Math.random() * 0.5 - 0.25;
+                     // <<< MODIFIED: Remove the particle system explicitly for bottom orbs >>>
+                     if (orb.userData.particleSystem) {
+                         orb.remove(orb.userData.particleSystem); // Remove from group
+                         if(orb.userData.particleSystem.geometry) orb.userData.particleSystem.geometry.dispose();
+                         if(orb.userData.particleSystem.material) orb.userData.particleSystem.material.dispose();
+                         orb.userData.particleSystem = null; // Clear reference
+                     }
+                     setGroup.add(orb); }); return setGroup; }
+            bottomOrbsGroup.add(createOrbSet(-orbSpacing * 1.2, [1, 5, 4])); bottomOrbsGroup.add(createOrbSet(0, [0, 3])); bottomOrbsGroup.add(createOrbSet(orbSpacing * 1.2, [2, 7, 9]));
+            bottomOrbsGroup.visible = false; scene.add(bottomOrbsGroup);
+            console.log("3D Bottom Orbs created.");
+        }
+
+        // --- Generate Secret Sequence (Keep as is) ---
+        function generateSecretSequence(mode) { console.log(`Generating sequence for mode: ${mode}`); let seed; if (mode === 'Daily Glyphs') { seed = getDailySeed(); currentRng = mulberry32(seed); console.log("Using Daily Seeded RNG"); } else { currentRng = Math.random; console.log("Using default Math.random (Astral Trials)"); } const numColors = DISPLAY_PALETTES.length; if (numColors < SEQUENCE_LENGTH) { console.error(`Error: Not enough colors (${numColors}) for length ${SEQUENCE_LENGTH}.`); secretSequence = Array.from({ length: SEQUENCE_LENGTH }, (_, i) => i % numColors); } else { const indices = Array.from({ length: numColors }, (_, i) => i); for (let i = indices.length - 1; i > 0; i--) { const j = Math.floor(currentRng() * (i + 1)); [indices[i], indices[j]] = [indices[j], indices[i]]; } secretSequence = indices.slice(0, SEQUENCE_LENGTH); } console.log(`Secret Sequence for ${mode} (Indices):`, secretSequence); console.log(`Secret Sequence Colors: [${getSequenceColorNames(secretSequence).join(', ')}]`); }
+        // --- Start New Attempt (Keep as is) ---
+        function startNewAttempt() { if (currentAttempt >= MAX_ATTEMPTS) return; targetBoardRotation = 0; targetBoardTilt = 0; currentBoardRotation = 0; currentBoardTilt = 0; if (!guessRowsContainer) { console.error("Guess row container missing, cannot start new attempt."); return; } // Added check
+             currentGuessRowGroup = createGuessRow(currentAttempt); guessRowsContainer.add(currentGuessRowGroup); targetContainerZ = -(currentAttempt * GUESS_ROW_Z_SPACING); console.log(`Starting Attempt ${currentAttempt}, Target Container Z: ${targetContainerZ.toFixed(2)}`); updateSubmitButtonState(); /* showView('Game') is handled by startGame/resetGame */ }
+        // --- OrbitControls Setup (Keep as is) ---
+        function setupControls() { controls = new THREE.OrbitControls(camera, renderer.domElement); controls.enableDamping = true; controls.dampingFactor = 0.1; controls.screenSpacePanning = false; controls.enablePan = false; controls.enableRotate = false; controls.enableZoom = false; controls.target.set(0, 1, 0); controls.update(); }
+        // --- Lighting Setup (Keep as is) ---
+        function setupLighting() { const ambientLight=new THREE.AmbientLight(0xffffff,0.25);scene.add(ambientLight);const keyLight=new THREE.DirectionalLight(0xffffff,1.0);keyLight.position.set(5,5,5);keyLight.castShadow=true;keyLight.shadow.mapSize.width=1024;keyLight.shadow.mapSize.height=1024;keyLight.shadow.camera.near=0.5;keyLight.shadow.camera.far=50;scene.add(keyLight);const fillLight=new THREE.DirectionalLight(0xffaaff,0.5);fillLight.position.set(-5,-3,2);scene.add(fillLight);const rimLight=new THREE.SpotLight(0xaaaaff,1.5,20,Math.PI/6,0.5);rimLight.position.set(0,6,-5);rimLight.target.position.set(0,0,0);scene.add(rimLight);scene.add(rimLight.target); }
+        // --- Environment Map Setup (Keep as is) ---
+        function setupEnvironmentMap(callback) { if(environmentMap){ console.log("Environment map already loaded."); if(callback) callback(); return; } const loader=new THREE.CubeTextureLoader(); const path='https://threejs.org/examples/textures/cube/pisa/'; const urls=[path+'px.png',path+'nx.png',path+'py.png',path+'ny.png',path+'pz.png',path+'nz.png']; loader.load(urls,(texture)=>{texture.encoding=THREE.sRGBEncoding;scene.environment=texture;environmentMap=texture;console.log("Environment map loaded.");if(callback)callback();},undefined,(error)=>{console.error('Error loading environment map:',error);if(callback)callback();}); }
+        // --- Create Palette Orbs (Keep as is) ---
+        function createPaletteOrbs() { if (!paletteGroup) { console.error("Palette group missing"); return; } while(paletteGroup.children.length) paletteGroup.remove(paletteGroup.children[0]); paletteOrbsData = []; const angleStep = (Math.PI * 2) / DISPLAY_PALETTES.length; DISPLAY_PALETTES.forEach((palette, index) => { const orbGroup = createOrbGroup(palette); const angle = index * angleStep; orbGroup.position.x = PALETTE_ARC_RADIUS * Math.sin(angle); orbGroup.position.z = PALETTE_ARC_RADIUS * Math.cos(angle); orbGroup.userData = { type: 'palette', index: index, paletteName: palette.name }; orbGroup.children[0].userData = { parentGroup: orbGroup }; paletteOrbsData.push({ group: orbGroup, index: index }); paletteGroup.add(orbGroup); }); console.log(`Palette orbs created (${DISPLAY_PALETTES.length}).`); }
+        // --- Create Guess Row (Keep as is) ---
+        function createGuessRow(attemptIndex) {
+            const group = new THREE.Group(); group.position.y = GUESS_ROW_START_Y; group.position.z = attemptIndex * GUESS_ROW_Z_SPACING; group.userData = { attemptIndex: attemptIndex };
+            const hexRadius = SLOT_RADIUS; const positions = [ new THREE.Vector3(hexRadius, 0, 0), new THREE.Vector3(hexRadius / 2, 0, -hexRadius * Math.sqrt(3) / 2), new THREE.Vector3(-hexRadius / 2, 0, -hexRadius * Math.sqrt(3) / 2), new THREE.Vector3(-hexRadius, 0, 0), new THREE.Vector3(-hexRadius / 2, 0, hexRadius * Math.sqrt(3) / 2), new THREE.Vector3(hexRadius / 2, 0, hexRadius * Math.sqrt(3) / 2), new THREE.Vector3(0, 0, 0) ];
+            guessSlotsData[attemptIndex] = []; placedOrbs[attemptIndex] = new Array(SEQUENCE_LENGTH).fill(null);
+            for (let i = 0; i < SEQUENCE_LENGTH; i++) { const slotMesh = new THREE.Mesh(slotGeometry, slotMaterial.clone()); slotMesh.position.copy(positions[i]); slotMesh.rotation.x = Math.PI / 2; const slotTargetMesh = new THREE.Mesh(slotTargetGeometry, slotTargetMaterial.clone()); slotTargetMesh.position.copy(positions[i]); slotTargetMesh.rotation.x = Math.PI / 2; const commonUserData = { type: 'slot', physicalIndex: i, row: attemptIndex, occupied: false, attemptIndex: attemptIndex }; slotMesh.userData = { ...commonUserData }; slotTargetMesh.userData = { ...commonUserData }; guessSlotsData[attemptIndex].push({ mesh: slotMesh, targetMesh: slotTargetMesh, physicalIndex: i, row: attemptIndex, occupied: false }); group.add(slotMesh); group.add(slotTargetMesh); }
+            group.rotation.y = 0; group.rotation.x = 0; console.log(`Guess row ${attemptIndex} created with ${SEQUENCE_LENGTH} slots.`); return group;
+        }
+
+        // --- START REPLACEMENT: createInternalParticleSystem ---
+        function createInternalParticleSystem(palette, orbRadiusOuter) {
+            try {
+                // --- NEW: Define Aura Shell Parameters ---
+                const AURA_MIN_RADIUS_FACTOR = 0.008; // Start slightly outside the outer bubble
+                const AURA_MAX_RADIUS_FACTOR = 0; // How far the aura extends
+                const AURA_SHELL_THICKNESS = (orbRadiusOuter * AURA_MAX_RADIUS_FACTOR) - (orbRadiusOuter * AURA_MIN_RADIUS_FACTOR); // Calculated thickness
+                const AURA_NUM_PARTICLES = 20000; // Increase for denser aura? Adjust as needed
+                const PARTICLE_BASE_SIZE = 0.12; // Adjust size
+                const PARTICLE_BASE_ALPHA = 0.04; // Base starting opacity
+                const PARTICLE_SHIMMER_SPEED = 2.8; // How fast particles shimmer
+                const PARTICLE_DRIFT_SPEED = 5.5; // Slow outward/inward drift
+
+                const particlesGeometry = new THREE.BufferGeometry();
+                const positions = [];
+                const colors = [];
+                const randomness = []; // For unique animation per particle
+                const baseColor = new THREE.Color(palette.emissive); // Use emissive for glow
+
+                const auraMinRadius = orbRadiusOuter * AURA_MIN_RADIUS_FACTOR;
+                const auraMaxRadius = orbRadiusOuter * AURA_MAX_RADIUS_FACTOR;
+
+                for (let i = 0; i < AURA_NUM_PARTICLES; i++) {
+                    // --- Generate points within the shell ---
+                    const radius = auraMinRadius + Math.random() * (auraMaxRadius - auraMinRadius); // Random radius within the shell
+                    const u = Math.random();
+                    const v = Math.random();
+                    const theta = u * Math.PI * 2;
+                    const phi = Math.acos(2 * v - 1);
+
+                    const x = radius * Math.sin(phi) * Math.cos(theta);
+                    const y = radius * Math.sin(phi) * Math.sin(theta);
+                    const z = radius * Math.cos(phi);
+
+                    if (isNaN(x) || isNaN(y) || isNaN(z)) continue; // Basic sanity check
+
+                    positions.push(x, y, z);
+                    // Use the emissive color directly
+                    colors.push(baseColor.r, baseColor.g, baseColor.b);
+                    // Store random values for animation offsets
+                    randomness.push(Math.random(), Math.random(), Math.random());
+                }
+
+                if (positions.length === 0) {
+                    console.warn(`No valid particle positions generated for ${palette.name}.`);
+                    return null;
+                }
+
+                particlesGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                particlesGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+                particlesGeometry.setAttribute('aRandom', new THREE.Float32BufferAttribute(randomness, 3)); // Pass randomness to shader
+
+                const particlesMaterial = new THREE.PointsMaterial({
+                    size: PARTICLE_BASE_SIZE,
+                    vertexColors: true,
+                    blending: THREE.AdditiveBlending, // <<< KEY for glowing aura
+                    transparent: true,
+                    opacity: PARTICLE_BASE_ALPHA,   // Set base opacity here
+                    depthWrite: false,              // Important for blending
+                    sizeAttenuation: true,
+                });
+
+                // Store constants for the shader
+                particlesMaterial.userData.uniforms = {
+                    uTime: { value: 0.0 },
+                    uMinRadius: { value: auraMinRadius },
+                    uMaxRadius: { value: auraMaxRadius },
+                    uShimmerSpeed: { value: PARTICLE_SHIMMER_SPEED },
+                    uDriftSpeed: { value: PARTICLE_DRIFT_SPEED }
+                };
+                particlesMaterial.userData.isParticleSystem = true; // Flag for identification
+
+                // --- Simplified Shader ---
+                particlesMaterial.onBeforeCompile = (shader) => {
+                    // Add uniforms
+                    shader.uniforms.uTime = particlesMaterial.userData.uniforms.uTime;
+                    shader.uniforms.uMinRadius = particlesMaterial.userData.uniforms.uMinRadius;
+                    shader.uniforms.uMaxRadius = particlesMaterial.userData.uniforms.uMaxRadius;
+                    shader.uniforms.uShimmerSpeed = particlesMaterial.userData.uniforms.uShimmerSpeed;
+                    shader.uniforms.uDriftSpeed = particlesMaterial.userData.uniforms.uDriftSpeed;
+
+                    // Add attributes and varyings
+                    shader.vertexShader = 'attribute vec3 aRandom;\n' +
+                                          'varying float vRandom;\n' + // Pass simple random value
+                                          'varying float vDist;\n' + // Pass distance from center
+                                          'uniform float uTime;\n' +
+                                          'uniform float uDriftSpeed;\n' +
+                                          shader.vertexShader;
+
+                    shader.fragmentShader = 'varying float vRandom;\n' +
+                                            'varying float vDist;\n' + // Receive distance
+                                            'uniform float uTime;\n' +
+                                            'uniform float uMinRadius;\n' +
+                                            'uniform float uMaxRadius;\n' +
+                                            'uniform float uShimmerSpeed;\n' +
+                                            shader.fragmentShader;
+
+                    // --- Vertex Shader Modifications ---
+                    shader.vertexShader = shader.vertexShader.replace(
+                        '#include <begin_vertex>',
+                        `#include <begin_vertex>\n
+                         vRandom = aRandom.x; // Use one random channel
+                         vDist = length(transformed); // Calculate distance from center
+
+                         // --- Subtle Movement (Optional: Gentle drift) ---
+                         float driftFactor = sin(uTime * uDriftSpeed * 0.5 + aRandom.y * 3.14) * uDriftSpeed * 0.1;
+                         transformed += normalize(transformed) * driftFactor; // Move along normal
+                        `
+                    );
+                     shader.vertexShader = shader.vertexShader.replace(
+                        '#include <project_vertex>',
+                         // --- Adjust point size slightly based on randomness (optional) ---
+                         // You can add size variation here if desired, e.g.:
+                         // `gl_PointSize *= (0.8 + aRandom.z * 0.4);`
+                        `#include <project_vertex>` // Keep the original projection logic
+                    );
+
+
+                    // --- Fragment Shader Modifications ---
+                    shader.fragmentShader = shader.fragmentShader.replace(
+                        '#include <color_fragment>',
+                        `#include <color_fragment>\n
+                        // --- Fade based on distance from center ---
+                        // Smooth fade across the shell thickness
+                        float fadeFactor = 1.0 - smoothstep(uMinRadius, uMaxRadius, vDist);
+                        fadeFactor = pow(fadeFactor, 1.5); // Power makes fade sharper at outer edge
+
+                        // --- Simple Shimmering Brightness/Alpha ---
+                        float shimmer = 0.7 + 0.6 * sin(uTime * uShimmerSpeed + vRandom * 10.0); // Vary brightness/alpha
+
+                        // --- Combine Effects ---
+                        // Apply shimmer to color brightness
+                         diffuseColor.rgb *= shimmer;
+                        // Apply fade and shimmer to alpha
+                         diffuseColor.a *= fadeFactor * (0.5 + shimmer * 0.5); // Modulate alpha too
+
+                         // Clamp alpha to avoid negative values
+                         diffuseColor.a = clamp(diffuseColor.a, 0.0, 1.0);
+
+                         // Optional: Make particles brighter overall
+                         // diffuseColor.rgb *= 1.5; // Increase brightness multiplier
+                        `
+                    );
+                     // Optional: Ensure particles are bright even with tone mapping
+                     shader.fragmentShader = shader.fragmentShader.replace(
+                         '#include <tonemapping_fragment>',
+                         `diffuseColor = vec4(pow(diffuseColor.rgb, vec3(1.0/2.2)), diffuseColor.a); // Basic gamma correction approximation if needed
+                          #include <tonemapping_fragment>`
+                     );
+
+
+                    // Log the final shaders if debugging is needed
+                    // console.log("Vertex Shader:\n", shader.vertexShader);
+                    // console.log("Fragment Shader:\n", shader.fragmentShader);
+                };
+
+                const particleSystem = new THREE.Points(particlesGeometry, particlesMaterial);
+                particleSystem.userData.isParticleSystem = true; // Keep your flag
+                return particleSystem;
+
+            } catch (error) {
+                console.error(`Error creating particle system for ${palette.name}:`, error);
+                return null;
+            }
+        }
+        // --- END REPLACEMENT: createInternalParticleSystem ---
+
+
+        // --- Create Orb Group (Keep as is, uses the function above) ---
+        function createOrbGroup(palette) {
+            let crystalEmissiveIntensity = (palette.name === 'White' ? 0.5 : 1.5); let crystalMetalness = 0.2; let crystalRoughness = 0.3; let crystalColor = palette.crystal; let bubbleTransmission = 0.9; let bubbleOpacity = 0.9; let envMapIntensityBubble = 1.0; let envMapIntensityCrystal = 0.3; if (palette.name === 'Black') { crystalMetalness = 0.9; crystalRoughness = 0.2; crystalColor = 0x111111; crystalEmissiveIntensity = 0; bubbleTransmission = 0.5; bubbleOpacity = 0.8; envMapIntensityBubble = 1.5; envMapIntensityCrystal = 0.8; } else if (palette.name === 'White') { crystalColor = 0xEAEAEA; }
+            const crystalMaterial = new THREE.MeshStandardMaterial({ color: crystalColor, emissive: palette.emissive, emissiveIntensity: crystalEmissiveIntensity, metalness: crystalMetalness, roughness: crystalRoughness, envMap: environmentMap, envMapIntensity: envMapIntensityCrystal, toneMapped: false });
+            const crystalMesh = new THREE.Mesh(crystalGeometry, crystalMaterial); crystalMesh.castShadow = true;
+            const bubbleMaterial = new THREE.MeshPhysicalMaterial({ color: palette.bubble, metalness: (palette.name === 'Black' ? 0.2 : 0.8), roughness: 0.05, transmission: bubbleTransmission, transparent: true, opacity: bubbleOpacity, ior: 1.8, reflectivity: 0.9, envMap: environmentMap, envMapIntensity: envMapIntensityBubble, clearcoat: 0.5, clearcoatRoughness: 0.1 });
+            const bubbleMesh = new THREE.Mesh(bubbleGeometry, bubbleMaterial); bubbleMesh.receiveShadow = true;
+            const orbGroup = new THREE.Group(); orbGroup.add(bubbleMesh); orbGroup.add(crystalMesh);
+            // <<< Call the REVISED particle system creator >>>
+            const particleSystemMesh = createInternalParticleSystem(palette, ORB_RADIUS_OUTER); // Pass OUTER radius
+            if (particleSystemMesh) {
+                particleSystemMesh.visible = false; // Ensure it's visible
+                orbGroup.add(particleSystemMesh);
+                orbGroup.userData.particleSystem = particleSystemMesh; // Store reference in userData
+            }
+            const paletteIndex = DISPLAY_PALETTES.findIndex(p => p.name === palette.name); orbGroup.userData.paletteIndex = paletteIndex; bubbleMesh.userData = { parentGroup: orbGroup, type: 'placed_orb_bubble' }; crystalMesh.userData = { parentGroup: orbGroup, type: 'placed_orb_crystal' };
+            return orbGroup;
+        }
+        // --- Post-Processing Setup (Keep as is) ---
+        function setupPostProcessing() { composer=new THREE.EffectComposer(renderer);const renderPass=new THREE.RenderPass(scene,camera);composer.addPass(renderPass); bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth,window.innerHeight),1.2,0.5,0.6); composer.addPass(bloomPass); console.log("Post-processing setup complete."); }
+
+        // --- Interaction Setup (Canvas Listeners Only - Keep as is) ---
+        function setupInteraction() {
+            window.removeEventListener('touchstart', onTouchStart); window.removeEventListener('touchmove', onTouchMove); window.removeEventListener('touchend', onTouchEnd); window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mousedown', onMouseDown); window.removeEventListener('mouseup', onMouseUp);
+            window.addEventListener('touchstart', onTouchStart, { passive: false }); window.addEventListener('touchmove', onTouchMove, { passive: false }); window.addEventListener('touchend', onTouchEnd, false); window.addEventListener('mousemove', onMouseMove, false); window.addEventListener('mousedown', onMouseDown, false); window.addEventListener('mouseup', onMouseUp, false);
+            console.log("Canvas interaction listeners added/updated.");
+        }
+
+        // --- Mouse/Touch Handlers (Game Interactions on Canvas - Keep as is) ---
+        function getPointerIntersects(screenX, screenY) {
+             if (currentView !== 'Game') return []; // Only raycast in game view
+             touchPos.x = (screenX / window.innerWidth) * 2 - 1; touchPos.y = -(screenY / window.innerHeight) * 2 + 1; raycaster.setFromCamera(touchPos, camera); let intersects = [];
+              if(paletteGroup?.visible) { const allPaletteBubbles = paletteOrbsData.map(data => data.group.children[0]).filter(b => b); intersects = raycaster.intersectObjects(allPaletteBubbles); if (intersects.length > 0) return intersects; }
+              if(currentGuessRowGroup && guessRowsContainer?.visible) { const currentPlacedOrbBubbles = []; if (placedOrbs[currentAttempt]) { placedOrbs[currentAttempt].forEach(orbGroup => { if (orbGroup?.children[0]) currentPlacedOrbBubbles.push(orbGroup.children[0]); }); } if (currentPlacedOrbBubbles.length > 0) { intersects = raycaster.intersectObjects(currentPlacedOrbBubbles); if (intersects.length > 0) return intersects; } if (confirmedSelectedOrb !== null && guessSlotsData[currentAttempt]) { const currentSlotTargets = guessSlotsData[currentAttempt].map(s => s.targetMesh).filter(t => t); if (currentSlotTargets.length > 0) { intersects = raycaster.intersectObjects(currentSlotTargets); if (intersects.length > 0) return intersects; } } } return intersects;
+         }
+        function onMouseMove(event) {
+             // Check if target is canvas *before* processing
+             if (event.target !== renderer?.domElement) { resetSlotHover(); return; }
+             if (isMouseDown && currentView === 'Game') { const deltaX = event.clientX - mouseStartX; const deltaY = event.clientY - mouseStartY; if (Math.abs(deltaX) > TAP_THRESHOLD_DIST || Math.abs(deltaY) > TAP_THRESHOLD_DIST) touchMoved = true; }
+             else if (!isMouseDown && currentView === 'Game') { handleMouseHover(event.clientX, event.clientY); }
+             else if (!isMouseDown && currentView !== 'Game'){ resetSlotHover(); } // Reset game hover if mouse moves outside game view
+         }
+        function onMouseDown(event) { if (event.target !== renderer?.domElement) return; if (currentView === 'Game') { isMouseDown = true; mouseStartX = event.clientX; mouseStartY = event.clientY; mouseDownTime = Date.now(); touchMoved = false; } }
+        function onMouseUp(event) { if (!isMouseDown || event.target !== renderer?.domElement) { isMouseDown = false; return; } // Don't check currentView here, let tap/swipe handlers do it
+              isMouseDown = false; const mouseUpTime = Date.now(); const duration = mouseUpTime - mouseDownTime; if (currentView === 'Game') { // Check view *before* handling tap/swipe
+                 if (!touchMoved && duration < TAP_THRESHOLD_TIME) { handleTap(event.clientX, event.clientY); }
+                 else if (touchMoved) { const deltaX = event.clientX - mouseStartX; const deltaY = event.clientY - mouseStartY; handleSwipe(deltaX, deltaY, mouseStartY); }
+             } touchMoved = false;
+        }
+        function onTouchStart(event) { if (event.target !== renderer?.domElement) return; if (currentView === 'Game') { event.preventDefault(); if (event.touches.length > 0) { const touch = event.touches[0]; touchStartX = touch.clientX; touchStartY = touch.clientY; touchStartTime = Date.now(); touchMoved = false; } } }
+        function onTouchMove(event) { if (event.target !== renderer?.domElement || currentView !== 'Game') return; event.preventDefault(); if (event.touches.length > 0) { const touch = event.touches[0]; const deltaX = touch.clientX - touchStartX; const deltaY = touch.clientY - touchStartY; if (Math.abs(deltaX) > TAP_THRESHOLD_DIST || Math.abs(deltaY) > TAP_THRESHOLD_DIST) { touchMoved = true; } } }
+        function onTouchEnd(event) { if (event.target !== renderer?.domElement) return; // Don't check currentView here
+             if (event.changedTouches.length === 0) return; const touch = event.changedTouches[0]; const touchEndTime = Date.now(); const touchDuration = touchEndTime - touchStartTime; if (currentView === 'Game') { // Check view *before* handling tap/swipe
+                 if (!touchMoved && touchDuration < TAP_THRESHOLD_TIME) { handleTap(touch.clientX, touch.clientY); }
+                 else if (touchMoved) { const deltaX = touch.clientX - touchStartX; const deltaY = touch.clientY - touchStartY; handleSwipe(deltaX, deltaY, touchStartY); }
+             } touchStartX = 0; touchStartY = 0; touchStartTime = 0; touchMoved = false;
+        }
+        function handleSwipe(deltaX, deltaY, startY) { if (currentView !== 'Game') return; const isHorizontalSwipe = Math.abs(deltaX) > SWIPE_THRESHOLD_X && Math.abs(deltaY) < SWIPE_THRESHOLD_Y * 1.5; const isVerticalSwipe = Math.abs(deltaY) > SWIPE_THRESHOLD_Y && Math.abs(deltaX) < SWIPE_THRESHOLD_X * 1.5; const isTopHalf = startY < window.innerHeight * 0.55; if (isTopHalf) { if (isHorizontalSwipe) { const swipeDirection = deltaX > 0 ? -1 : 1; console.log("-> Rotating Palette"); rotatePalette(swipeDirection); } } else { if (isVerticalSwipe) { const swipeDirection = deltaY > 0 ? -1 : 1; console.log("-> Tilting Board"); tiltBoard(swipeDirection * (Math.PI / 12)); } } }
+        function handleTap(screenX, screenY) {
+            if (currentView !== 'Game') return; const intersects = getPointerIntersects(screenX, screenY); if (intersects.length > 0) { const intersectedObject = intersects[0].object; const userData = intersectedObject.userData; console.log("Canvas Tap intersected (Game View):", userData); if (userData.parentGroup?.userData?.type === 'palette') { confirmPaletteSelection(userData.parentGroup); return; } else if (userData.type === 'placed_orb_bubble' || userData.type === 'placed_orb_crystal') { handleRemoveOrb(userData.parentGroup); return; } else if (userData.type === 'slot' && confirmedSelectedOrb !== null) { const slotData = guessSlotsData[currentAttempt]?.find(s => s.targetMesh === intersectedObject); // Check targetMesh specifically
+                if (slotData && slotData.row === currentAttempt && !slotData.occupied) { handleSlotPlacement(userData.row, userData.physicalIndex); return; } } } else { deselectPaletteOrb(); } }
+
+
+        // --- Palette & Board Logic (Keep existing) ---
+        function rotatePalette(indexIncrement) { if (gameState !== 'playing') return; targetPaletteIndex = (targetPaletteIndex + indexIncrement + DISPLAY_PALETTES.length) % DISPLAY_PALETTES.length; const anglePerOrb = (Math.PI * 2) / DISPLAY_PALETTES.length; targetPaletteRotation = -targetPaletteIndex * anglePerOrb; console.log(`Targeting palette index: ${targetPaletteIndex}, Target Rotation: ${targetPaletteRotation.toFixed(2)}`); deselectPaletteOrb(false); }
+        function confirmPaletteSelection(selectedOrbGroup) { if (gameState !== 'playing' || !selectedOrbGroup) return; if (confirmedSelectedOrb && confirmedSelectedOrb !== selectedOrbGroup) { const isHighlighted = (confirmedSelectedOrb === highlightedPaletteOrb); const targetScale = isHighlighted ? HIGHLIGHT_SCALE : 1; confirmedSelectedOrb.scale.set(targetScale, targetScale, targetScale); } confirmedSelectedOrb = selectedOrbGroup; selectedPaletteIndex = confirmedSelectedOrb.userData.index; confirmedSelectedOrb.scale.set(SELECTION_SCALE, SELECTION_SCALE, SELECTION_SCALE); console.log(`Confirmed selection: ${DISPLAY_PALETTES[selectedPaletteIndex].name}`); showMessage(`Selected: ${DISPLAY_PALETTES[selectedPaletteIndex].name}. Tap slot to place.`); resetSlotHover(); }
+        function deselectPaletteOrb(showMessageFlag = true) { if (confirmedSelectedOrb) { const isHighlighted = (confirmedSelectedOrb === highlightedPaletteOrb); const targetScale = isHighlighted ? HIGHLIGHT_SCALE : 1; confirmedSelectedOrb.scale.set(targetScale, targetScale, targetScale); confirmedSelectedOrb = null; selectedPaletteIndex = null; if (showMessageFlag) showMessage("Color deselected.", 1500); resetSlotHover(); } }
+        function rotateBoard(angleIncrement) { if (!currentGuessRowGroup || gameState !== 'playing') return; targetBoardRotation += angleIncrement; console.log(`Targeting board rotation: ${Math.round(THREE.MathUtils.radToDeg(targetBoardRotation))} deg`); resetSlotHover(); }
+        function tiltBoard(angleIncrement) { if (!currentGuessRowGroup || gameState !== 'playing') return; targetBoardTilt = THREE.MathUtils.clamp( targetBoardTilt + angleIncrement, MIN_BOARD_TILT, MAX_BOARD_TILT ); console.log(`Targeting board tilt: ${Math.round(THREE.MathUtils.radToDeg(targetBoardTilt))} deg`); resetSlotHover(); }
+
+        // --- Game Logic (Keep existing) ---
+        function handleSlotPlacement(rowIndex, physicalSlotIndex) { if (gameState !== 'playing' || rowIndex !== currentAttempt) return; if (selectedPaletteIndex === null || confirmedSelectedOrb === null) { showMessage("Select a color from the palette first.", 1500); return; } const slotData = guessSlotsData[rowIndex]?.find(s => s.physicalIndex === physicalSlotIndex); if (!slotData || slotData.occupied) { showMessage("Slot is already occupied.", 1500); return; } let logicalSlotIndex; if (physicalSlotIndex === 6) { logicalSlotIndex = 6; } else { const numRotations = Math.round(currentBoardRotation / BOARD_ROTATION_STEP); logicalSlotIndex = (((physicalSlotIndex - numRotations) % 6) + 6) % 6; } if (placedOrbs[rowIndex] && placedOrbs[rowIndex][logicalSlotIndex] !== null) { console.error(`Logical Slot ${logicalSlotIndex} occupied conflict`); showMessage("Slot conflict detected (logical).", 2000); return; } const palette = DISPLAY_PALETTES[selectedPaletteIndex]; const newOrbGroup = createOrbGroup(palette); newOrbGroup.position.copy(slotData.mesh.position); newOrbGroup.position.y += ORB_RADIUS_OUTER * 0.3; if(!currentGuessRowGroup) { console.error("Cannot place orb: currentGuessRowGroup is null!"); return; } currentGuessRowGroup.add(newOrbGroup); if (!placedOrbs[rowIndex]) { placedOrbs[rowIndex] = new Array(SEQUENCE_LENGTH).fill(null); } placedOrbs[rowIndex][logicalSlotIndex] = newOrbGroup; slotData.occupied = true; slotData.mesh.userData.occupied = true; slotData.targetMesh.userData.occupied = true; console.log(`Placed orb ${palette.name} in Physical Slot ${physicalSlotIndex}, Logical Slot ${logicalSlotIndex}`); resetSlotHover(); deselectPaletteOrb(false); updateSubmitButtonState(); }
+        function handleRemoveOrb(orbGroupToRemove) { if (gameState !== 'playing' || !orbGroupToRemove || !placedOrbs[currentAttempt]) return; const logicalIndex = placedOrbs[currentAttempt].indexOf(orbGroupToRemove); if (logicalIndex === -1) { console.error("Could not find orb to remove"); return; } console.log(`Removing orb from logical slot ${logicalIndex}`); let physicalIndex; if (logicalIndex === 6) { physicalIndex = 6; } else { const numRotations = Math.round(currentBoardRotation / BOARD_ROTATION_STEP); physicalIndex = (logicalIndex + numRotations) % 6; } const slotData = guessSlotsData[currentAttempt]?.find(s => s.physicalIndex === physicalIndex); if (slotData) { slotData.occupied = false; if(slotData.mesh) slotData.mesh.userData.occupied = false; if(slotData.targetMesh) slotData.targetMesh.userData.occupied = false; if(slotData.mesh) resetSlotHover(slotData.mesh); console.log(`Marked physical slot ${physicalIndex} as unoccupied.`); } else { console.error(`Could not find slot data for physical index ${physicalIndex} during removal.`); } if(!currentGuessRowGroup) { console.error("Cannot remove orb: currentGuessRowGroup is null!"); return; } currentGuessRowGroup.remove(orbGroupToRemove); placedOrbs[currentAttempt][logicalIndex] = null; orbGroupToRemove.traverse(child => {
+            if (child.isMesh || child.isPoints) {
+                child.geometry?.dispose();
+                if (child.material) { if (Array.isArray(child.material)) { child.material.forEach(mat => mat.dispose()); } else { child.material.dispose(); } }
+             }
+             // <<< MODIFIED: Check userData for particle system disposal >>>
+             if(child.isGroup && child.userData?.particleSystem?.isPoints) {
+                 if(child.userData.particleSystem.geometry) child.userData.particleSystem.geometry.dispose();
+                 if(child.userData.particleSystem.material) child.userData.particleSystem.material.dispose();
+                 child.userData.particleSystem = null; // Clear reference
+             }
+            }); console.log(`Disposed resources for removed orb (logical index ${logicalIndex})`); showMessage("Orb removed.", 1500); updateSubmitButtonState(); resetSlotHover(); }
+        let hoveredSlot = null; function handleMouseHover(screenX, screenY) { if (gameState !== 'playing' || confirmedSelectedOrb === null || currentView !== 'Game') { resetSlotHover(); return; } // Added view check
+             touchPos.x = (screenX / window.innerWidth) * 2 - 1; touchPos.y = -(screenY / window.innerHeight) * 2 + 1; raycaster.setFromCamera(touchPos, camera); const currentSlotTargets = guessSlotsData[currentAttempt]?.map(s => s.targetMesh) || []; let intersectedTarget = null; if (currentSlotTargets.length > 0) { const intersectsSlots = raycaster.intersectObjects(currentSlotTargets); if (intersectsSlots.length > 0) intersectedTarget = intersectsSlots[0].object; } let newHoveredSlotMesh = null; if (intersectedTarget) { const slotUserData = intersectedTarget.userData; if (slotUserData.row === currentAttempt && slotUserData.type === 'slot' && !slotUserData.occupied) { const slotData = guessSlotsData[currentAttempt].find(s => s.targetMesh === intersectedTarget); if (slotData && slotData.mesh) newHoveredSlotMesh = slotData.mesh; } } if (hoveredSlot !== newHoveredSlotMesh) { if (hoveredSlot && hoveredSlot.material !== slotMaterial) { const slotData = guessSlotsData[currentAttempt]?.find(s => s.mesh === hoveredSlot); if (slotData && !slotData.occupied) hoveredSlot.material = slotMaterial; } if (newHoveredSlotMesh) { newHoveredSlotMesh.material = slotHoverMaterial; hoveredSlot = newHoveredSlotMesh; } else { hoveredSlot = null; } } }
+        function resetSlotHover(specificSlot = null) { if (specificSlot && specificSlot.material !== slotMaterial) { specificSlot.material = slotMaterial; if (hoveredSlot === specificSlot) hoveredSlot = null; } else if (!specificSlot && hoveredSlot && hoveredSlot.material !== slotMaterial) { const slotData = guessSlotsData[currentAttempt]?.find(s => s.mesh === hoveredSlot); if (slotData && !slotData.occupied) hoveredSlot.material = slotMaterial; else if (!slotData) hoveredSlot.material = slotMaterial; hoveredSlot = null; } }
+        function updateSubmitButtonState() { const submitButton = document.getElementById('submit-button'); if (!submitButton) return; if (gameState !== 'playing' || currentView !== 'Game') { submitButton.style.display = 'none'; return; } const currentLogicalPlaced = placedOrbs[currentAttempt]; const isRowFull = currentLogicalPlaced && currentLogicalPlaced.length === SEQUENCE_LENGTH && currentLogicalPlaced.every(orb => orb !== null); submitButton.style.display = isRowFull ? 'block' : 'none'; submitButton.disabled = !isRowFull; }
+        function handleSubmit() { if (gameState !== 'playing' || currentAttempt >= MAX_ATTEMPTS) return; const guess = []; const currentLogicalPlacedOrbs = placedOrbs[currentAttempt]; let isValidGuess = true; if (!currentLogicalPlacedOrbs || currentLogicalPlacedOrbs.length !== SEQUENCE_LENGTH) { isValidGuess = false; } else { for (let i = 0; i < SEQUENCE_LENGTH; i++) { const orbGroup = currentLogicalPlacedOrbs[i]; if (!orbGroup || orbGroup.userData.paletteIndex === undefined) { isValidGuess = false; break; } guess.push(orbGroup.userData.paletteIndex); } } if (!isValidGuess) { showMessage("Error: Guess is incomplete.", 2000); return; } console.log(`Submitting guess ${currentAttempt} (Length: ${guess.length}):`, guess, `(${getSequenceColorNames(guess).join(', ')})`); disableInteraction(); const feedbackResults = checkGuess(guess); displayFeedback(currentAttempt, feedbackResults); setTimeout(() => { const isWin = feedbackResults.every(result => result === 'green'); if (isWin) { handleWin(); } else if (currentAttempt >= MAX_ATTEMPTS - 1) { handleLoss(); } else { currentAttempt++; startNewAttempt(); enableInteraction(); showMessage(`Attempt ${currentAttempt + 1} of ${MAX_ATTEMPTS}. Make your guess.`); } }, 1500); }
+        function disableInteraction() { console.log("Interaction Disabled (Submit/Hover)"); gameSubmitButton.disabled = true; resetSlotHover(); }
+        function enableInteraction() { console.log("Interaction Enabled (Submit)"); updateSubmitButtonState(); }
+        function checkGuess(guessIndices) { const feedback = new Array(SEQUENCE_LENGTH).fill(null); const secretCopy = [...secretSequence]; const guessCopy = [...guessIndices]; const secretCounts = {}; for (let i = 0; i < SEQUENCE_LENGTH; i++) { if (guessCopy[i] === secretCopy[i]) { feedback[i] = 'green'; secretCopy[i] = null; guessCopy[i] = -1; } } for (let i = 0; i < SEQUENCE_LENGTH; i++) { if (secretCopy[i] !== null) { secretCounts[secretCopy[i]] = (secretCounts[secretCopy[i]] || 0) + 1; } } for (let i = 0; i < SEQUENCE_LENGTH; i++) { if (guessCopy[i] !== -1) { const guessColorIndex = guessCopy[i]; if (secretCounts[guessColorIndex] && secretCounts[guessColorIndex] > 0) { feedback[i] = 'yellow'; secretCounts[guessColorIndex]--; guessCopy[i] = -1; } } } for (let i = 0; i < SEQUENCE_LENGTH; i++) { if (feedback[i] === null) { feedback[i] = 'gray'; } } console.log(`Feedback (Logical Order, Length ${feedback.length}):`, feedback); return feedback; }
+        function displayFeedback(attemptIndex, feedbackResults) { if (!guessSlotsData[attemptIndex] || feedbackResults.length !== SEQUENCE_LENGTH) return; const rowGroup = guessRowsContainer?.children.find(child => child.isGroup && child.userData.attemptIndex === attemptIndex); if (!rowGroup) return; const numRotations = Math.round(rowGroup.rotation.y / BOARD_ROTATION_STEP); console.log(`Displaying feedback for attempt ${attemptIndex} with ${numRotations} rotations.`); for (let logicalIndex = 0; logicalIndex < SEQUENCE_LENGTH; logicalIndex++) { const feedback = feedbackResults[logicalIndex]; const color = FEEDBACK_COLORS[feedback]; let physicalIndex; if (logicalIndex === 6) { physicalIndex = 6; } else { physicalIndex = (logicalIndex + numRotations + 6) % 6; } const slotData = guessSlotsData[attemptIndex].find(s => s.physicalIndex === physicalIndex); if (slotData && slotData.mesh) { slotData.mesh.material = slotData.mesh.material.clone(); slotData.mesh.material.color.setHex(color); slotData.mesh.material.opacity = 0.9; if (hoveredSlot === slotData.mesh) { resetSlotHover(slotData.mesh); } } else { console.error(`Could not find physical slot ${physicalIndex} for feedback.`); } const orbGroup = placedOrbs[attemptIndex]?.[logicalIndex]; if (feedback === 'green' && orbGroup) { if (orbGroup.userData.paletteIndex !== undefined) { const paletteIndex = orbGroup.userData.paletteIndex; if (paletteIndex >= 0 && paletteIndex < GLYPH_MAP.length) { const glyphSymbol = GLYPH_MAP[paletteIndex]; revealGlyph(orbGroup, glyphSymbol, attemptIndex, logicalIndex); } }
+            // <<< MODIFIED: Ensure particle system visibility on Green feedback >>>
+            if (orbGroup.userData.particleSystem) {
+                orbGroup.userData.particleSystem.visible = true;
+            }
+        } else if (orbGroup && orbGroup.userData.particleSystem) {
+             // <<< MODIFIED: Hide particle system if not green (or keep visible if desired) >>>
+             orbGroup.userData.particleSystem.visible = false; // Or true if you want aura always
+        }
+        } }
+        /*glyphElements defined globally*/ function revealGlyph(orbGroup, symbol, attemptIndex, logicalIndex) { const overlayContainer = document.getElementById('glyph-overlay'); const elementId = `glyph-${attemptIndex}-${logicalIndex}`; if (!glyphElements[attemptIndex]) glyphElements[attemptIndex] = {}; let glyphElement = glyphElements[attemptIndex][logicalIndex]; if (!glyphElement) { glyphElement = document.createElement('div'); glyphElement.id = elementId; glyphElement.className = 'glyph'; glyphElement.textContent = symbol; overlayContainer.appendChild(glyphElement); glyphElements[attemptIndex][logicalIndex] = glyphElement; } glyphElement.style.display = 'block'; }
+        function updateGlyphPositions() { if (!camera || !placedOrbs || placedOrbs.length === 0 || currentView !== 'Game') return; const screenWidth = window.innerWidth; const screenHeight = window.innerHeight; for (let attemptIdx = 0; attemptIdx < placedOrbs.length; attemptIdx++) { if (!placedOrbs[attemptIdx] || !glyphElements[attemptIdx]) continue; for (let logicalIdx = 0; logicalIdx < SEQUENCE_LENGTH; logicalIdx++) { const orbGroup = placedOrbs[attemptIdx][logicalIdx]; const glyphElement = glyphElements[attemptIdx][logicalIdx]; if (orbGroup && glyphElement && glyphElement.style.display === 'block') { const worldPosition = new THREE.Vector3(); orbGroup.children[1].getWorldPosition(worldPosition); const screenPosition = worldPosition.clone().project(camera); const x = (screenPosition.x * 0.5 + 0.5) * screenWidth; const y = (-screenPosition.y * 0.5 + 0.5) * screenHeight; if (screenPosition.z > 1) { glyphElement.style.display = 'none'; } else { glyphElement.style.display = 'block'; glyphElement.style.left = `${x}px`; glyphElement.style.top = `${y}px`; } } } } }
+        function handleWin() { gameState = 'won'; showMessage(`You guessed the sequence in ${currentAttempt + 1} attempts!`, 10000); console.log("Game Won!"); revealSequence(); disableInteraction(); }
+        function handleLoss() { gameState = 'lost'; const secretNames = getSequenceColorNames(secretSequence); showMessage(`Out of attempts! The sequence was: [${secretNames.join(', ')}]`, 10000); revealSequence(); disableInteraction(); console.log("Game Lost! Secret:", secretSequence, secretNames); }
+        function revealSequence() {
+            if (revealGroup && revealGroup.parent) {
+                revealGroup.parent.remove(revealGroup);
+                revealGroup.traverse(obj => {
+                    if (obj.isMesh || obj.isPoints){
+                         obj.geometry?.dispose();
+                         if(obj.material){if (Array.isArray(obj.material)) obj.material.forEach(mat => mat.dispose()); else obj.material.dispose();}
+                    }
+                    // <<< MODIFIED: Check userData for particle system disposal >>>
+                    if(obj.isGroup && obj.userData?.particleSystem?.isPoints) {
+                        if(obj.userData.particleSystem.geometry) obj.userData.particleSystem.geometry.dispose();
+                        if(obj.userData.particleSystem.material) obj.userData.particleSystem.material.dispose();
+                        obj.userData.particleSystem = null; // Clear reference
+                    }
+                });
+            }
+            revealGroup = new THREE.Group(); const revealY = GUESS_ROW_START_Y + 1.5; const lastRowZ = (MAX_ATTEMPTS - 1) * GUESS_ROW_Z_SPACING; const revealLocalZ = lastRowZ + GUESS_ROW_Z_SPACING * 0.75; revealGroup.position.set(0, revealY, revealLocalZ); const orbSpacing = ORB_RADIUS_OUTER * 2.4; const totalWidth = (SEQUENCE_LENGTH - 1) * orbSpacing; const startX = -totalWidth / 2;
+            secretSequence.forEach((paletteIndex, i) => { if (paletteIndex >= 0 && paletteIndex < DISPLAY_PALETTES.length) { const palette = DISPLAY_PALETTES[paletteIndex]; const orb = createOrbGroup(palette); orb.position.x = startX + i * orbSpacing; revealGroup.add(orb);
+                // <<< MODIFIED: Activate particles in reveal sequence >>>
+                if (orb.userData.particleSystem) {
+                   orb.userData.particleSystem.visible = true;
+                }
+            } else { console.error(`Invalid palette index ${paletteIndex} in secret sequence during reveal.`); } });
+            if(!guessRowsContainer) { console.error("Cannot add reveal group, container missing!"); return; } guessRowsContainer.add(revealGroup); console.log(`Created reveal sequence group (Length: ${SEQUENCE_LENGTH}) at local Z: ${revealLocalZ.toFixed(2)}`);
+            const desiredWorldZ = -1.5; const calculatedTargetContainerZ = desiredWorldZ - revealLocalZ; targetContainerZ = calculatedTargetContainerZ; console.log(`Targeting container Z: ${targetContainerZ.toFixed(2)} for reveal.`);
+        }
+        function getSequenceColorNames(indices) { return indices.map(index => { return (index >= 0 && index < DISPLAY_PALETTES.length) ? DISPLAY_PALETTES[index].name : 'Unknown'; }); }
+        let messageTimeout; function showMessage(text, duration = 3000) { const messageElement=document.getElementById('message'); if (!messageElement) return; messageElement.textContent=text; messageElement.style.display='block'; clearTimeout(messageTimeout); if(duration>0){ messageTimeout=setTimeout(()=>{messageElement.style.display='none';}, duration); } }
+        function onWindowResize() { const width = window.innerWidth; const height = window.innerHeight; camera.aspect = width / height; camera.updateProjectionMatrix(); renderer.setSize(width, height); composer.setSize(width, height); console.log("Window resized."); updateGlyphPositions(); }
+
+        // --- Animation Loop (MODIFIED) ---
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            const elapsedTime = clock.getElapsedTime(); // Get elapsed time once per frame
+
+            if (controls.enabled) { controls.update(delta); } // Update controls only if enabled
+
+            // Animate Bottom Orbs (when visible)
+            if (bottomOrbsGroup && bottomOrbsGroup.visible) {
+                 bottomOrbsGroup.children.forEach((set, setIndex) => {
+                     set.children.forEach((orb, orbIndex) => {
+                         orb.rotation.y += delta * 0.1 * (setIndex % 2 === 0 ? 1 : -1);
+                         orb.position.y = Math.sin(elapsedTime * 0.5 + setIndex * 0.8 + orbIndex * 0.3) * 0.1;
+                         // Note: Bottom orbs intentionally don't have particle systems animated here
+                     });
+                 });
+            }
+
+            // Game Animations (Only in Game view)
+            if (currentView === 'Game') {
+                 if (guessRowsContainer) {
+                     const containerMoveDiff = targetContainerZ - currentContainerZ;
+                     if (Math.abs(containerMoveDiff) > 0.01) {
+                         currentContainerZ += containerMoveDiff * delta * CONTAINER_MOVE_SPEED;
+                         guessRowsContainer.position.z = currentContainerZ;
+                     } else if (currentContainerZ !== targetContainerZ) {
+                         currentContainerZ = targetContainerZ;
+                         guessRowsContainer.position.z = currentContainerZ;
+                     }
+                 }
+                 if (paletteGroup) {
+                     let diff = targetPaletteRotation - currentPaletteRotation;
+                     let shortest = Math.atan2(Math.sin(diff), Math.cos(diff));
+                     let step = shortest * delta * PALETTE_ROTATION_SPEED;
+                     if (Math.abs(shortest) > 0.005) {
+                         currentPaletteRotation += step;
+                         paletteGroup.rotation.y = currentPaletteRotation;
+                     } else if (currentPaletteRotation !== targetPaletteRotation) {
+                         currentPaletteRotation = targetPaletteRotation;
+                         paletteGroup.rotation.y = currentPaletteRotation;
+                     }
+                 }
+                 if (currentGuessRowGroup) {
+                     let rotDiff = targetBoardRotation - currentBoardRotation;
+                     let shortRot = Math.atan2(Math.sin(rotDiff), Math.cos(rotDiff));
+                     let rotStep = shortRot * delta * BOARD_ROTATION_SPEED;
+                     if (Math.abs(shortRot) > 0.005) {
+                         currentBoardRotation += rotStep;
+                         currentGuessRowGroup.rotation.y = currentBoardRotation;
+                     } else if (currentBoardRotation !== targetBoardRotation) {
+                         currentBoardRotation = targetBoardRotation;
+                         currentGuessRowGroup.rotation.y = currentBoardRotation;
+                     }
+                     const tiltDiff = targetBoardTilt - currentBoardTilt;
+                     const tiltStep = tiltDiff * delta * BOARD_TILT_SPEED;
+                     if (Math.abs(tiltDiff) > 0.005) {
+                         currentBoardTilt += tiltStep;
+                         currentGuessRowGroup.rotation.x = currentBoardTilt;
+                     } else if (currentBoardTilt !== targetBoardTilt) {
+                         currentBoardTilt = targetBoardTilt;
+                         currentGuessRowGroup.rotation.x = currentBoardTilt;
+                     }
+                 }
+                 if (paletteOrbsData.length > 0 && paletteGroup?.visible) {
+                     const anglePerOrb = (Math.PI * 2) / DISPLAY_PALETTES.length;
+                     const currentFrontIndexRaw = -currentPaletteRotation / anglePerOrb;
+                     const closestIndex = (Math.round(currentFrontIndexRaw) % DISPLAY_PALETTES.length + DISPLAY_PALETTES.length) % DISPLAY_PALETTES.length;
+                     let newHighlightedOrb = paletteOrbsData[closestIndex]?.group || null;
+                     if (highlightedPaletteOrb && highlightedPaletteOrb !== newHighlightedOrb && highlightedPaletteOrb !== confirmedSelectedOrb) { highlightedPaletteOrb.scale.lerp(new THREE.Vector3(1,1,1), delta * 10); }
+                     if (newHighlightedOrb && newHighlightedOrb !== highlightedPaletteOrb) { if (newHighlightedOrb !== confirmedSelectedOrb) { newHighlightedOrb.scale.lerp(new THREE.Vector3(HIGHLIGHT_SCALE, HIGHLIGHT_SCALE, HIGHLIGHT_SCALE), delta * 10); } highlightedPaletteOrb = newHighlightedOrb; }
+                     else if (!newHighlightedOrb && highlightedPaletteOrb && highlightedPaletteOrb !== confirmedSelectedOrb) { highlightedPaletteOrb.scale.lerp(new THREE.Vector3(1,1,1), delta * 10); highlightedPaletteOrb = null; }
+                     paletteOrbsData.forEach(data => {
+                         const orbGroup = data.group;
+                         const bobble = Math.sin(elapsedTime * 1.5 + data.index * 0.5) * 0.05;
+                         orbGroup.position.y = PALETTE_Y_POS + bobble;
+                         let targetScaleVec = new THREE.Vector3(1, 1, 1);
+                         if (orbGroup === confirmedSelectedOrb) targetScaleVec.setScalar(SELECTION_SCALE);
+                         else if (orbGroup === highlightedPaletteOrb) targetScaleVec.setScalar(HIGHLIGHT_SCALE);
+                         orbGroup.scale.lerp(targetScaleVec, delta * 10);
+                         // <<< MODIFIED: Update particle time for PALETTE orbs >>>
+                         if (orbGroup.userData.particleSystem?.visible) {
+                             const ps = orbGroup.userData.particleSystem;
+                             if (ps.material.userData.uniforms?.uTime) {
+                                ps.material.userData.uniforms.uTime.value = elapsedTime;
+                             }
+                         }
+                     });
+                 }
+
+                 // <<< MODIFIED: Centralized Particle System Time Update >>>
+                 if (guessRowsContainer?.visible) {
+                     guessRowsContainer.children.forEach(rowGroup => { // Iterates through all rows (current, history, reveal)
+                         if (rowGroup.isGroup) {
+                            // --- History Row Scaling ---
+                            if (rowGroup.userData.attemptIndex !== undefined && rowGroup !== revealGroup) {
+                                const age = currentAttempt - rowGroup.userData.attemptIndex;
+                                let targetScaleVec = new THREE.Vector3(1, 1, 1);
+                                if (age > 0) {
+                                    const targetScaleValue = Math.max(0.1, 1.0 / (1.0 + age * HISTORY_ROW_SCALE_FACTOR));
+                                    targetScaleVec.set(targetScaleValue, targetScaleValue, targetScaleValue);
+                                }
+                                rowGroup.scale.lerp(targetScaleVec, delta * 5.0);
+                            }
+                            // --- Particle Update within the Row ---
+                             rowGroup.children.forEach(child => {
+                                 // Check if the child is an ORB GROUP containing a particle system
+                                 if (child.isGroup && child.userData.particleSystem?.isPoints && child.userData.particleSystem.visible) {
+                                     const ps = child.userData.particleSystem;
+                                     if (ps.material.userData.uniforms?.uTime) {
+                                         ps.material.userData.uniforms.uTime.value = elapsedTime;
+                                     }
+                                 }
+                             });
+                         }
+                     });
+                 }
+
+                 updateGlyphPositions();
+            } // end if Game view
+
+            // Render scene
+            if (composer) { composer.render(delta); }
+            else { renderer.render(scene, camera); }
         }
 
         // --- Start ---
@@ -240,12 +1377,3 @@
     </script>
 </body>
 </html>
-
-Key Changes:
- * Row History Animation:
-   * Increased GUESS_ROW_Z_SPACING to -4.0 to push rows back further.
-   * Added attemptIndex to userData for each guessRowGroup in createGuessRow.
-   * Added logic in the animate loop to iterate through guessRowsContainer.children. For groups representing previous attempts (age > 0), it calculates a targetScale that decreases with age and smoothly interpolates the group's scale towards that target using lerp.
- * Palette Layout: Updated PALETTE_Y_POS to 3.5 and PALETTE_ARC_RADIUS to 3.5. Adjusted camera Y position and lookAt slightly.
- * Board Reset: Confirmed startNewAttempt resets board rotation/tilt targets to 0.
-Now, previous rows should recede further into the distance and shrink, creating a clearer view of the current row, and the palette should be positioned higher and tighter as requested.
